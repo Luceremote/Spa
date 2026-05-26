@@ -1,0 +1,68 @@
+# Render Blueprint — defines services-as-code.
+# Cuando conectes el repo, Render leerá este archivo y creará todo solo.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: spa-api
+    runtime: docker
+    region: oregon                 # US West (más cerca de Neon us-east si lo tienes)
+    plan: free                     # cambia a 'starter' ($7/mes) cuando quieras que NO se duerma
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .               # raíz del repo (necesario por el monorepo)
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Estas las llenas en el dashboard de Render (Environment) — NO commitear secrets aquí
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: CORS_ORIGIN
+        sync: false                # ej: https://tu-spa.vercel.app
+      - key: TRUST_PROXY
+        value: "1"
+      - key: MAX_BODY_KB
+        value: "256"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: CURRENCY
+        value: usd
+      - key: APP_URL
+        sync: false                # ej: https://tu-spa.vercel.app
+      - key: ALLOWED_IMAGE_HOSTS
+        sync: false                # añade aquí el dominio público de tu R2
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: STORAGE_DRIVER
+        value: s3                  # usaremos Cloudflare R2 (S3-compatible)
+      - key: S3_ENDPOINT
+        sync: false                # https://<account>.r2.cloudflarestorage.com
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: S3_PUBLIC_URL
+        sync: false                # CDN/dominio público del bucket
+      - key: TOTP_ENCRYPTION_KEY
+        sync: false                # genera uno nuevo para producción
+      - key: ENABLE_CRON
+        value: "true"
+      - key: REMINDER_MINUTES_BEFORE
+        value: "60"

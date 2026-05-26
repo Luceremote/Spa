@@ -1,0 +1,258 @@
+// Spa Software - Schema Prisma
+// Modelos: usuarios admin, clientes, categorías, servicios, reservas, pagos, tema, config, staff,
+// cupones, días cerrados, eventos de seguridad, 2FA, tokens push.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  STRIPE_CARD
+  CASH
+  TRANSFER
+  OTHER
+}
+
+enum CouponType {
+  PERCENT     // descuento en porcentaje
+  FIXED       // descuento de monto fijo (centavos)
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  name            String
+  role            Role      @default(ADMIN)
+  failedLoginAttempts Int   @default(0)
+  lockedUntil     DateTime?
+  lastLoginAt     DateTime?
+  lastLoginIp     String?
+  tokenVersion    Int       @default(0)
+  // 2FA TOTP
+  totpEnabled     Boolean   @default(false)
+  totpSecret      String?
+  recoveryCodes   String[]  @default([]) // hashes de códigos de respaldo de un solo uso
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  notes     String?
+  bookings  Booking[]
+  pushTokens PushToken[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([phone])
+  @@index([email])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  order       Int       @default(0)
+  services    Service[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Service {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  description     String
+  priceCents      Int
+  durationMinutes Int
+  imageUrl        String?
+  active          Boolean   @default(true)
+  featured        Boolean   @default(false)
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  staff           Staff[]   @relation("StaffServices")
+  bookings        Booking[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([active])
+  @@index([categoryId])
+}
+
+// Profesional / terapeuta / colaborador. Permite asignar una reserva a una persona específica.
+model Staff {
+  id           String    @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  bio          String?
+  avatarUrl    String?
+  active       Boolean   @default(true)
+  // Disponibilidad: bitmask de días (0=Dom .. 6=Sáb). Ej. [1,2,3,4,5] = lunes-viernes
+  workingDays  Int[]     @default([1, 2, 3, 4, 5, 6])
+  // Hora de inicio/fin en minutos desde medianoche (e.g. 540 = 9:00, 1140 = 19:00)
+  workingFrom  Int       @default(540)
+  workingTo    Int       @default(1140)
+  // Servicios que puede realizar (si vacío => todos)
+  services     Service[] @relation("StaffServices")
+  bookings     Booking[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId   String
+  service     Service       @relation(fields: [serviceId], references: [id])
+  staffId     String?
+  staff       Staff?        @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  startAt     DateTime
+  endAt       DateTime
+  status      BookingStatus @default(PENDING)
+  priceCents      Int       // monto final cobrado (después de descuento)
+  basePriceCents  Int       // precio del servicio antes del cupón (para reportes)
+  discountCents   Int       @default(0)
+  couponId        String?
+  coupon          Coupon?   @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  notes       String?
+  reminderSentAt  DateTime? // marca cuando se mandó el recordatorio
+  payment     Payment?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([startAt])
+  @@index([status])
+  @@index([staffId, startAt])
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  bookingId             String        @unique
+  booking               Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amountCents           Int
+  currency              String        @default("usd")
+  method                PaymentMethod @default(STRIPE_CARD)
+  status                PaymentStatus @default(PENDING)
+  stripeSessionId       String?       @unique
+  stripePaymentIntentId String?       @unique
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+// Cupones / códigos promo
+model Coupon {
+  id            String     @id @default(cuid())
+  code          String     @unique
+  type          CouponType
+  // Si type=PERCENT: porcentaje 1-100. Si type=FIXED: centavos.
+  value         Int
+  active        Boolean    @default(true)
+  expiresAt     DateTime?
+  maxUses       Int?       // límite total de usos (null = ilimitado)
+  usedCount     Int        @default(0)
+  minPriceCents Int?       // monto mínimo para aplicarlo
+  bookings      Booking[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([active])
+}
+
+// Días cerrados / vacaciones del spa
+model ClosedDate {
+  id        String   @id @default(cuid())
+  date      DateTime @unique @db.Date // sólo fecha (sin hora)
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model SiteConfig {
+  id            String   @id @default("singleton")
+  spaName       String   @default("Mi Spa")
+  tagline       String   @default("Relájate, eres bienvenido")
+  logoUrl       String?
+  heroImageUrl  String?
+  whatsappPhone String   @default("15555555555")
+  whatsappMsg   String   @default("Hola, me gustaría reservar un servicio")
+  email         String?
+  address       String?
+  openingHours  String?
+  updatedAt     DateTime @updatedAt
+}
+
+model Theme {
+  id              String   @id @default("singleton")
+  colorPrimary    String   @default("340 75% 55%")
+  colorSecondary  String   @default("160 40% 70%")
+  colorAccent     String   @default("45 90% 70%")
+  colorBackground String   @default("30 40% 98%")
+  colorForeground String   @default("220 15% 20%")
+  colorMuted      String   @default("30 20% 92%")
+  borderRadius    String   @default("0.75rem")
+  cardPadding     String   @default("1.5rem")
+  containerWidth  String   @default("1200px")
+  fontFamily      String   @default("Inter")
+  fontSizeBase    String   @default("16px")
+  template        String   @default("elegant")
+  updatedAt       DateTime @updatedAt
+}
+
+// Tokens de Expo Push (cliente opta por recibir notificaciones)
+model PushToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  platform   String?  // "ios" | "android"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  type      String
+  email     String?
+  ip        String?
+  userAgent String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}

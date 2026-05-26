@@ -1,0 +1,22 @@
+{
+  "name": "spa-software",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Software completo para spa: web (cliente + admin) + API + móvil. Reservas, pagos Stripe, WhatsApp, personalización de tema.",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @spa/api dev",
+    "dev:web": "pnpm --filter @spa/web dev",
+    "build": "pnpm -r build",
+    "db:migrate": "pnpm --filter @spa/api prisma:migrate",
+    "db:seed": "pnpm --filter @spa/api prisma:seed",
+    "db:studio": "pnpm --filter @spa/api prisma:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

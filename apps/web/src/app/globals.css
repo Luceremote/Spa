@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables por defecto. ThemeProvider las sobreescribe en runtime con la config del admin. */
+:root {
+  --background: 30 40% 98%;
+  --foreground: 220 15% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 20%;
+  --primary: 340 75% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 160 40% 70%;
+  --secondary-foreground: 220 15% 15%;
+  --accent: 45 90% 70%;
+  --accent-foreground: 220 15% 15%;
+  --muted: 30 20% 92%;
+  --muted-foreground: 220 10% 45%;
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 20% 88%;
+  --input: 30 20% 88%;
+  --ring: 340 75% 55%;
+  --radius: 0.75rem;
+  --container-width: 1200px;
+  --card-padding: 1.5rem;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+  .container {
+    max-width: var(--container-width);
+  }
+}
+
+@layer components {
+  .spa-card {
+    @apply bg-card text-card-foreground border shadow-sm rounded-lg;
+    padding: var(--card-padding);
+  }
+}

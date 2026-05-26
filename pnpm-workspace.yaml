@@ -1,0 +1,16 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Permitir scripts post-install necesarios (Prisma genera cliente, esbuild compila binarios)
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  unrs-resolver: true
+
+# Forzar una sola versión de @types/react (la web y la móvil traen versiones distintas)
+overrides:
+  '@types/react': '18.3.12'
+  '@types/react-dom': '18.3.1'

@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Spa",
+    "slug": "spa-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "spa",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#fbe9f0",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.spa"
+    },
+    "android": {
+      "adaptiveIcon": { "backgroundColor": "#fbe9f0" },
+      "package": "com.example.spa"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true },
+    "extra": {
+      "apiUrl": "http://localhost:4000/api"
+    }
+  }
+}

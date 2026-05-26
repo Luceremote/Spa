@@ -1,0 +1,65 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Clock, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { fetchServiceBySlug } from "@/lib/server-fetch";
+import { formatMoney } from "@/lib/utils";
+
+export default async function ServiceDetailPage({ params }: { params: { slug: string } }) {
+  const service = await fetchServiceBySlug(params.slug);
+  if (!service) notFound();
+
+  return (
+    <div className="container py-12">
+      <Link
+        href="/servicios"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6"
+      >
+        <ArrowLeft className="h-4 w-4" /> Todos los servicios
+      </Link>
+
+      <div className="grid md:grid-cols-2 gap-10 items-start">
+        <div
+          className="aspect-square rounded-lg bg-cover bg-center"
+          style={{
+            backgroundImage: service.imageUrl
+              ? `url('${service.imageUrl}')`
+              : "linear-gradient(135deg, hsl(var(--primary)/0.2), hsl(var(--accent)/0.25))",
+          }}
+        />
+
+        <div>
+          {service.category && (
+            <span className="text-sm text-primary font-medium uppercase tracking-wide">
+              {service.category.name}
+            </span>
+          )}
+          <h1 className="text-3xl md:text-4xl font-bold mt-2 mb-4">{service.name}</h1>
+          <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+            {service.description}
+          </p>
+
+          <div className="flex items-center gap-6 mb-8 p-4 bg-muted/40 rounded-lg">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Duración</p>
+              <p className="font-semibold flex items-center gap-1 mt-1">
+                <Clock className="h-4 w-4" /> {service.durationMinutes} min
+              </p>
+            </div>
+            <div className="border-l h-10" />
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Precio</p>
+              <p className="text-2xl font-bold text-primary mt-1">
+                {formatMoney(service.priceCents)}
+              </p>
+            </div>
+          </div>
+
+          <Button asChild size="lg" className="w-full sm:w-auto">
+            <Link href={`/reservar?service=${service.id}`}>Reservar este servicio</Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

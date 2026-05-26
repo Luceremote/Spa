@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Prisma
+apps/api/prisma/migrations/dev.db*
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+
+# Uploads / generated
+apps/api/uploads/
+apps/web/public/uploads/
+
+# Expo (auto-generated)
+apps/mobile/.expo/
+apps/mobile/.expo-shared/
+apps/mobile/web-build/
+apps/mobile/dist/
+apps/mobile/expo-env.d.ts
