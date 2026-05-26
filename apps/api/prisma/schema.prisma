@@ -3,7 +3,9 @@
 // cupones, días cerrados, eventos de seguridad, 2FA, tokens push.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Render/Docker corren Alpine (musl). Incluimos ambos para que funcione local (Windows) y en prod.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
