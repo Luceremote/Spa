@@ -1,12 +1,6 @@
 # Spa Software
 
-Plataforma completa para gestión de spa:
-
-- **Web pública** para clientes: landing, menú de servicios, reservas, pagos con tarjeta.
-- **Panel admin** para el dueño: calendario, dashboard de ganancias, CRUD servicios, clientes y personalización completa del tema.
-- **App móvil** (iOS + Android) con tema sincronizado en vivo desde el panel.
-- **Pagos** con Stripe (USD, crédito/débito).
-- **WhatsApp** integrado (botón flotante + deep link).
+Plataforma para gestión integral de un spa: reservas online, pagos con tarjeta, panel de administración, app móvil y personalización del sitio en vivo.
 
 ## Stack
 
@@ -14,10 +8,11 @@ Plataforma completa para gestión de spa:
 | -------- | ------------------------------------------------------------- |
 | Monorepo | pnpm workspaces                                               |
 | API      | Node 20 + Express + TypeScript + Prisma + PostgreSQL          |
-| Web      | Next.js 14 (App Router) + Tailwind + shadcn-style             |
+| Web      | Next.js 14 (App Router) + Tailwind CSS                        |
 | Móvil    | Expo SDK 51 + React Native + expo-router                      |
 | Pagos    | Stripe Checkout + webhook con verificación de firma           |
-| Email    | Resend (3k emails/mes gratis)                                 |
+| Email    | Resend                                                        |
+| Storage  | S3-compatible (AWS S3 / Cloudflare R2 / MinIO) o disco local  |
 
 ## Estructura
 
@@ -25,23 +20,21 @@ Plataforma completa para gestión de spa:
 spa-software/
 ├── apps/
 │   ├── api/      # Backend Express + Prisma + Stripe + uploads + emails
-│   ├── web/      # Next.js: cliente público + admin (mismo deploy)
-│   └── mobile/   # Expo: app iOS/Android con tema dinámico
-├── SECURITY.md   # Guía de seguridad: qué hace el código y qué debes hacer tú
-├── DEPLOY.md     # Guía de despliegue a producción
-└── README.md     # Este archivo
+│   ├── web/      # Next.js: cliente público + admin
+│   └── mobile/   # Expo: app iOS / Android
+├── render.yaml   # Blueprint de despliegue para Render
+└── apps/web/vercel.json
 ```
 
 ## Setup local
 
-### 1) Requisitos
+### Requisitos
 
 - Node.js >= 20
 - pnpm >= 9 (`npm install -g pnpm`)
-- PostgreSQL local **o** en la nube ([Neon](https://neon.tech) free funciona perfecto)
-- (Opcional) [Stripe CLI](https://stripe.com/docs/stripe-cli) para webhooks en local
+- PostgreSQL local o gestionado (Neon, Supabase, Railway)
 
-### 2) Variables de entorno
+### Variables de entorno
 
 ```powershell
 copy apps\api\.env.example apps\api\.env
@@ -49,107 +42,98 @@ copy apps\web\.env.example apps\web\.env.local
 copy apps\mobile\.env.example apps\mobile\.env
 ```
 
-Edita las copias:
+Editar las copias:
 
-- `apps/api/.env` → `DATABASE_URL`, `JWT_SECRET` (>=32 chars), y opcionalmente Stripe + Resend.
-- `apps/web/.env.local` → `NEXT_PUBLIC_API_URL` (default `http://localhost:4000/api`).
-- `apps/mobile/.env` → `EXPO_PUBLIC_API_URL` (en dispositivo físico usa tu IP LAN).
+- `apps/api/.env` — `DATABASE_URL`, `JWT_SECRET` (>= 32 chars), Stripe y Resend opcionales.
+- `apps/web/.env.local` — `NEXT_PUBLIC_API_URL` (por defecto `http://localhost:4000/api`).
+- `apps/mobile/.env` — `EXPO_PUBLIC_API_URL` (IP LAN del PC para dispositivo físico).
 
-### 3) Instalar
+### Instalación
 
 ```powershell
 pnpm install
+pnpm db:migrate    # aplica migraciones
+pnpm db:seed       # datos de ejemplo
+pnpm dev           # arranca API (:4000) + Web (:3000)
 ```
 
-### 4) Base de datos
+URLs:
 
-```powershell
-pnpm db:migrate   # crea tablas
-pnpm db:seed      # admin demo + 7 servicios + tema default
-```
-
-Admin demo: `admin@spa.local` / `admin123` (cambia esto antes de producción).
-
-### 5) Levantar
-
-```powershell
-pnpm dev          # API en :4000 + Web en :3000
-```
-
-- Web pública: <http://localhost:3000>
+- Sitio público: <http://localhost:3000>
 - Panel admin: <http://localhost:3000/admin>
 - API: <http://localhost:4000/api/health>
 
-### 6) Móvil (opcional)
+Credenciales del admin de ejemplo: `admin@spa.local` / `admin123` (cambiar en producción).
+
+### App móvil
 
 ```powershell
 cd apps\mobile
 pnpm dev
-# Escanea el QR con Expo Go en tu teléfono
 ```
 
-## Features destacados
+Escanear el QR con la app **Expo Go** desde un dispositivo Android o iOS conectado a la misma red WiFi.
 
-### Cliente público
+## Funcionalidades
 
-- Landing con 4 plantillas (elegant, modern, minimal, luxury) — el admin elige
+### Sitio público
+
+- Landing personalizable con 4 plantillas (elegante / moderna / minimal / lujo)
 - Menú de servicios con filtros por categoría
-- Detalle de servicio con CTA reservar
-- Flujo de reserva de 3 pasos: servicio → fecha/hora → datos → pago
-- Pago con tarjeta (Stripe Checkout) o "pagar en sitio"
-- Botón flotante de WhatsApp en todas las pantallas
+- Detalle de cada servicio
+- Flujo de reserva en 3 pasos: servicio → fecha/hora → datos
+- Aplicación de cupones de descuento
+- Selección opcional del profesional
+- Pago con tarjeta vía Stripe Checkout
+- Consulta de reservas anteriores por teléfono
+- Botón flotante de WhatsApp
 
-### Panel admin
+### Panel de administración
 
-- Dashboard con ganancias del mes/hoy, gráfica de 6 meses, próximas reservas, top servicios
-- Calendario mensual de citas con click-to-edit (confirmar/cancelar/completar/no-show)
-- CRUD de servicios con upload de imágenes (JPG/PNG/WebP, verificado por magic bytes)
-- Lista/búsqueda de clientes con historial de reservas
-- **Personalización en vivo**: 6 paletas preset + color picker, radio de bordes, padding, ancho de contenedor, fuente, plantilla — preview en tiempo real antes de guardar
-- Configuración del sitio: nombre, logo, hero, WhatsApp, dirección, horario, email
+- Dashboard con ingresos del mes, gráfica histórica, próximas reservas y top de servicios
+- Calendario mensual con gestión de citas (confirmar / completar / cancelar / no-show)
+- CRUD de servicios con upload de imágenes
+- Gestión de categorías, profesionales, cupones y días cerrados
+- Base de clientes con historial
+- Personalización del tema en tiempo real (paletas, fuentes, plantilla)
+- Configuración del sitio (logo, hero, WhatsApp, dirección, horario)
+- Activación de 2FA con TOTP y panel de auditoría
+- Export de reservas en CSV
 
-### App móvil
+### Aplicación móvil
 
-- Misma experiencia que la web: home, servicios, detalle, reserva, contacto
-- Tema dinámico desde el panel admin (se cachea en AsyncStorage para arranque offline)
-- Pull-to-refresh para sincronizar tema/servicios
-- Pago abre Stripe Checkout en navegador in-app
+- Pantallas equivalentes a la web (home, servicios, detalle, reserva, contacto)
+- Tema sincronizado desde el admin con caché offline
+- Pago integrado mediante navegador in-app
+- Notificaciones push opcionales para recordatorios
 
 ### Seguridad
 
-- JWT con `issuer`/`audience`/`alg` fijos + `tokenVersion` para logout global
-- Bcrypt cost 12 + lockout de cuenta (5 intentos / 15 min)
-- Rate limiting granular (global + login con IP+email + reservas)
-- CSP estricto + HSTS + CORS whitelist
-- Sanitización de inputs + validación zod + magic bytes en uploads
-- Whitelist de hosts para imágenes externas (anti-SSRF)
-- Webhook Stripe con verificación de firma + comparación de monto
-- Auditoría de eventos de seguridad en tabla `SecurityEvent`
+- JWT con `issuer`/`audience`/`alg` fijos + `tokenVersion` por usuario
+- Bcrypt con cost 12 + bloqueo de cuenta tras 5 intentos fallidos
+- Rate limit global, por login (IP + email) y para reservas
+- CSP estricto, HSTS, CORS por whitelist
+- Sanitización y validación de inputs con Zod
+- Magic bytes para validar uploads (no se confía en MIME)
+- Webhook de Stripe con verificación de firma y comparación de monto
+- 2FA TOTP con secret cifrado en reposo (AES-256-GCM)
+- Tabla `SecurityEvent` para auditoría persistente
+- Cron de purga automática de eventos > 90 días
 
-→ Detalles completos en [`SECURITY.md`](./SECURITY.md).
+Detalles completos en [`SECURITY.md`](./SECURITY.md).
 
 ## Despliegue
 
-→ Ver [`DEPLOY.md`](./DEPLOY.md) (incluye Railway, Render, Vercel, EAS).
+Ver [`DEPLOY.md`](./DEPLOY.md) para instrucciones de despliegue en Render (API), Vercel (web) y EAS Build (app móvil).
 
-## Scripts disponibles
+## Scripts
 
 ```powershell
 pnpm dev               # api + web en paralelo
 pnpm dev:api           # solo api
 pnpm dev:web           # solo web
-pnpm build             # build de todos
-pnpm db:migrate        # nuevas migraciones
+pnpm build             # build de todos los workspaces
+pnpm db:migrate        # crea/aplica migraciones nuevas
 pnpm db:seed           # datos de prueba
-pnpm db:studio         # GUI de Prisma para inspeccionar DB
+pnpm db:studio         # GUI de Prisma para inspeccionar la DB
 ```
-
-## Roadmap sugerido (siguientes pasos)
-
-- [ ] 2FA para admins (TOTP con `otplib`)
-- [ ] Notificaciones push (Expo Push) recordando cita 1h antes
-- [ ] Cupones / códigos de descuento
-- [ ] Programa de fidelización (puntos por reserva)
-- [ ] Multi-staff / asignación de profesional a la reserva
-- [ ] Storage S3/R2 para uploads (necesario si despliegas en plataformas con FS efímero)
-- [ ] Migraciones automatizadas en CI

@@ -144,8 +144,10 @@ app.use("/uploads", uploadsStatic);
 app.use(notFound);
 app.use(errorHandler);
 
-const server = app.listen(env.PORT, () => {
-  console.log(`🌿 Spa API en http://localhost:${env.PORT} (${env.NODE_ENV})`);
+// Bind explícito a 0.0.0.0 (todas las interfaces) — necesario en contenedores Docker
+// para que el puerto sea visible desde fuera (Render, Fly.io, etc.).
+const server = app.listen(env.PORT, "0.0.0.0", () => {
+  console.log(`🌿 API escuchando en 0.0.0.0:${env.PORT} (${env.NODE_ENV})`);
   startCron();
   if (env.NODE_ENV === "production" && !env.STRIPE_WEBHOOK_SECRET) {
     console.warn("[startup] WARN: STRIPE_WEBHOOK_SECRET vacío — los webhooks fallarán.");
