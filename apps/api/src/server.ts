@@ -56,12 +56,18 @@ app.use(
   })
 );
 
-const corsOrigins = env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
+// Normaliza orígenes: quita barras finales y espacios (tolerante a errores tipográficos en env)
+const corsOrigins = env.CORS_ORIGIN
+  .split(",")
+  .map((s) => s.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
-      if (corsOrigins.includes(origin)) return cb(null, true);
+      const normalized = origin.replace(/\/+$/, "");
+      if (corsOrigins.includes(normalized)) return cb(null, true);
       return cb(new Error("CORS bloqueado"));
     },
     credentials: true,
