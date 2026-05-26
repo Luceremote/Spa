@@ -6,10 +6,10 @@ import { fetchSiteConfig } from "@/lib/server-fetch";
 export default async function ContactoPage() {
   const config = await fetchSiteConfig();
   return (
-    <div className="container py-12 max-w-4xl">
-      <header className="text-center mb-10">
-        <h1 className="text-4xl font-bold mb-3">Contáctanos</h1>
-        <p className="text-muted-foreground">Estamos para atenderte</p>
+    <div className="container py-8 sm:py-12 max-w-4xl">
+      <header className="text-center mb-8 sm:mb-10">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3">Contáctanos</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Estamos para atenderte</p>
       </header>
 
       <div className="grid md:grid-cols-2 gap-6 mb-10">
@@ -58,10 +58,10 @@ export default async function ContactoPage() {
       </div>
 
       <Card className="bg-primary/5">
-        <CardContent className="p-8 text-center">
-          <MessageCircle className="h-12 w-12 mx-auto text-primary mb-4" />
-          <h2 className="text-2xl font-bold mb-3">Chat directo por WhatsApp</h2>
-          <p className="text-muted-foreground mb-6">
+        <CardContent className="p-6 sm:p-8 text-center">
+          <MessageCircle className="h-10 sm:h-12 w-10 sm:w-12 mx-auto text-primary mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold mb-3">Chat directo por WhatsApp</h2>
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
             La forma más rápida de comunicarte con nosotros.
           </p>
           <Button asChild size="lg">

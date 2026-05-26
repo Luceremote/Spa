@@ -106,6 +106,63 @@ export function bookingPaidEmail(d: BookingMailData): { subject: string; html: s
   };
 }
 
+interface GiftCardMailData {
+  spaName: string;
+  recipientName: string;
+  recipientEmail: string;
+  purchaserName: string;
+  amountCents: number;
+  code: string;
+  message?: string | null;
+  appUrl: string;
+}
+
+export function giftCardEmail(d: GiftCardMailData): { subject: string; html: string } {
+  return {
+    subject: `🎁 Tienes una Gift Card de ${d.spaName}`,
+    html: `<div style="${BOX}">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:48px">🎁</div>
+        <h2 style="color:#d63384;margin:8px 0">${esc(d.purchaserName)} te regaló una Gift Card</h2>
+      </div>
+      <p style="font-size:16px">Hola <strong>${esc(d.recipientName)}</strong>,</p>
+      <p style="font-size:16px">Tienes un regalo de <strong>${esc(d.spaName)}</strong> con saldo para usar en cualquier servicio.</p>
+      ${d.message
+        ? `<div style="background:#fff5f8;border-left:4px solid #d63384;padding:16px;margin:20px 0;border-radius:4px">
+            <p style="margin:0;font-style:italic;color:#555">"${esc(d.message)}"</p>
+            <p style="margin:8px 0 0;font-size:13px;color:#999">— ${esc(d.purchaserName)}</p>
+          </div>`
+        : ""}
+      <div style="background:linear-gradient(135deg,#d63384,#f06292);color:#fff;padding:32px;border-radius:12px;text-align:center;margin:24px 0">
+        <div style="font-size:14px;opacity:0.9;text-transform:uppercase;letter-spacing:2px">Valor</div>
+        <div style="font-size:42px;font-weight:bold;margin:8px 0">${money(d.amountCents)}</div>
+        <div style="background:#fff;color:#333;padding:14px;border-radius:8px;margin-top:16px;font-family:monospace;font-size:18px;letter-spacing:3px;font-weight:bold">${esc(d.code)}</div>
+        <div style="font-size:12px;opacity:0.9;margin-top:8px">Código de canje</div>
+      </div>
+      <p style="text-align:center;margin:28px 0">
+        <a href="${esc(d.appUrl)}/reservar" style="${BTN}">Reservar ahora</a>
+      </p>
+      <p style="color:#666;font-size:13px;text-align:center">Usa el código al confirmar tu reserva para aplicar el saldo.</p>
+    </div>`,
+  };
+}
+
+export function giftCardReceiptEmail(d: GiftCardMailData): { subject: string; html: string } {
+  return {
+    subject: `Recibo: Gift Card de ${money(d.amountCents)} — ${d.spaName}`,
+    html: `<div style="${BOX}">
+      <h2 style="color:#16a34a">✓ Gift Card enviada</h2>
+      <p>Hola <strong>${esc(d.purchaserName)}</strong>, tu compra fue procesada con éxito.</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#fafafa;border-radius:8px">
+        <tr><td style="padding:10px 14px;color:#666">Para</td><td style="padding:10px 14px"><strong>${esc(d.recipientName)}</strong> (${esc(d.recipientEmail)})</td></tr>
+        <tr><td style="padding:10px 14px;color:#666">Valor</td><td style="padding:10px 14px"><strong>${money(d.amountCents)}</strong></td></tr>
+        <tr><td style="padding:10px 14px;color:#666">Código</td><td style="padding:10px 14px"><code>${esc(d.code)}</code></td></tr>
+      </table>
+      <p style="color:#666;font-size:14px">El destinatario recibió un correo separado con el código y las instrucciones para canjearlo.</p>
+    </div>`,
+  };
+}
+
 export function newBookingAdminEmail(d: BookingMailData): { subject: string; html: string } {
   return {
     subject: `Nueva reserva: ${d.serviceName} — ${d.customerName}`,

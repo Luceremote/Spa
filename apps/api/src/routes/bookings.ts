@@ -12,6 +12,20 @@ import { sendMail, bookingConfirmationEmail, newBookingAdminEmail } from "../mai
 import { env } from "../env.js";
 import { evaluateCoupon } from "./coupons.js";
 
+// Valida que una gift card exista, esté activa y tenga al menos algo de saldo
+async function evaluateGiftCard(code: string, basePriceCents: number) {
+  const c = String(code).trim().toUpperCase().slice(0, 20);
+  const card = await prisma.giftCard.findUnique({ where: { code: c } });
+  if (!card) return { error: "Gift card no encontrada" as const, card: null };
+  if (card.status !== "ACTIVE") return { error: "Gift card no está activa" as const, card: null };
+  if (card.expiresAt && card.expiresAt < new Date())
+    return { error: "Gift card expirada" as const, card: null };
+  if (card.balanceCents <= 0)
+    return { error: "Gift card sin saldo" as const, card: null };
+  const applied = Math.min(card.balanceCents, basePriceCents);
+  return { error: null, card, applied };
+}
+
 export const bookingsRouter = Router();
 
 const MIN_LEAD_MINUTES = 30;
@@ -112,6 +126,7 @@ const createBookingSchema = z.object({
   startAt: z.string().datetime(),
   notes: z.string().max(500).transform((s) => sanitizeText(s, 500)).optional().nullable(),
   couponCode: z.string().max(50).optional().nullable(),
+  giftCardCode: z.string().max(20).optional().nullable(),
 });
 
 bookingsRouter.post("/", async (req, res, next) => {
@@ -139,6 +154,17 @@ bookingsRouter.post("/", async (req, res, next) => {
     if (body.couponCode && couponEval.error) {
       throw new HttpError(400, couponEval.error);
     }
+
+    // Gift card (si viene) — aplica DESPUÉS del cupón al monto ya descontado
+    let giftCardApplied = 0;
+    let giftCardId: string | null = null;
+    if (body.giftCardCode) {
+      const gc = await evaluateGiftCard(body.giftCardCode, couponEval.finalCents);
+      if (gc.error) throw new HttpError(400, gc.error);
+      giftCardApplied = gc.applied!;
+      giftCardId = gc.card!.id;
+    }
+    const finalCentsAfterAll = couponEval.finalCents - giftCardApplied;
 
     // Cliente: buscar por teléfono o crear (transaccional)
     const customer = await prisma.$transaction(async (tx) => {
@@ -173,8 +199,8 @@ bookingsRouter.post("/", async (req, res, next) => {
           startAt,
           endAt,
           basePriceCents: service.priceCents,
-          discountCents: couponEval.discountCents,
-          priceCents: couponEval.finalCents,
+          discountCents: couponEval.discountCents + giftCardApplied,
+          priceCents: finalCentsAfterAll,
           couponId: couponEval.coupon?.id ?? null,
           notes: body.notes ?? null,
           status: "PENDING",
@@ -186,6 +212,22 @@ bookingsRouter.post("/", async (req, res, next) => {
           where: { id: couponEval.coupon.id },
           data: { usedCount: { increment: 1 } },
         });
+      }
+      if (giftCardId && giftCardApplied > 0) {
+        // Registra el redeem y descuenta el saldo de la gift card
+        await tx.giftCardRedemption.create({
+          data: { giftCardId, bookingId: b.id, amountCents: giftCardApplied },
+        });
+        const updated = await tx.giftCard.update({
+          where: { id: giftCardId },
+          data: { balanceCents: { decrement: giftCardApplied } },
+        });
+        if (updated.balanceCents <= 0) {
+          await tx.giftCard.update({
+            where: { id: giftCardId },
+            data: { status: "USED_UP" },
+          });
+        }
       }
       return b;
     });

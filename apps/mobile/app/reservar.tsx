@@ -48,6 +48,7 @@ export default function Reservar() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [gcCode, setGcCode] = useState("");
 
   const service = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
 
@@ -81,6 +82,7 @@ export default function Reservar() {
           customer: { name, phone, email: email || null },
           serviceId: service.id,
           startAt,
+          giftCardCode: gcCode || null,
         },
       });
       setCreatedId(r.booking.id);
@@ -266,6 +268,17 @@ export default function Reservar() {
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+        />
+        <Text style={[styles.label, { marginTop: 8 }]}>Gift Card (opcional)</Text>
+        <TextInput
+          style={[
+            styles.input,
+            { borderColor: hsl(theme.colorMuted), fontFamily: "monospace", letterSpacing: 1 },
+          ]}
+          placeholder="XXXX-XXXX-XXXX"
+          value={gcCode}
+          onChangeText={(t) => setGcCode(t.toUpperCase())}
+          autoCapitalize="characters"
         />
       </Card>
 

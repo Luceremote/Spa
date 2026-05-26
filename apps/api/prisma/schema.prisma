@@ -45,6 +45,15 @@ enum CouponType {
   FIXED       // descuento de monto fijo (centavos)
 }
 
+enum GiftCardStatus {
+  PENDING_PAYMENT  // creada, esperando que Stripe confirme el pago
+  ACTIVE           // pagada, con saldo disponible
+  USED_UP          // saldo agotado
+  EXPIRED
+  REFUNDED
+  CANCELLED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -143,11 +152,12 @@ model Booking {
   startAt     DateTime
   endAt       DateTime
   status      BookingStatus @default(PENDING)
-  priceCents      Int       // monto final cobrado (después de descuento)
-  basePriceCents  Int       // precio del servicio antes del cupón (para reportes)
+  priceCents      Int       // monto final a cobrar (después de descuento)
+  basePriceCents  Int       // precio del servicio antes de cupón/gift card
   discountCents   Int       @default(0)
   couponId        String?
   coupon          Coupon?   @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  redemptions     GiftCardRedemption[]
   notes       String?
   reminderSentAt  DateTime? // marca cuando se mandó el recordatorio
   payment     Payment?
@@ -191,6 +201,51 @@ model Coupon {
   updatedAt     DateTime   @updatedAt
 
   @@index([active])
+}
+
+// Gift Cards / tarjetas de regalo (con saldo prepagado)
+model GiftCard {
+  id                String         @id @default(cuid())
+  // Código único que el destinatario usa al reservar (mostrado al comprador)
+  code              String         @unique
+  initialCents      Int            // valor cargado al comprar
+  balanceCents      Int            // saldo restante actual
+  currency          String         @default("usd")
+  status            GiftCardStatus @default(PENDING_PAYMENT)
+  // Datos del comprador (quien paga)
+  purchaserName     String
+  purchaserEmail    String
+  // Datos del destinatario (puede ser el mismo comprador o un regalo)
+  recipientName     String?
+  recipientEmail    String?
+  // Mensaje personalizado del comprador para el destinatario
+  message           String?
+  // Pago vía Stripe Checkout
+  stripeSessionId       String?    @unique
+  stripePaymentIntentId String?    @unique
+  paidAt                DateTime?
+  expiresAt             DateTime?  // null = no expira
+  redemptions           GiftCardRedemption[]
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  @@index([status])
+  @@index([purchaserEmail])
+  @@index([recipientEmail])
+}
+
+// Cada vez que una gift card se usa en una reserva, se registra aquí
+model GiftCardRedemption {
+  id           String   @id @default(cuid())
+  giftCardId   String
+  giftCard     GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  bookingId    String
+  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amountCents  Int      // cuánto se descontó del saldo
+  createdAt    DateTime @default(now())
+
+  @@index([giftCardId])
+  @@index([bookingId])
 }
 
 // Días cerrados / vacaciones del spa

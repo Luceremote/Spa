@@ -10,15 +10,15 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
   if (!service) notFound();
 
   return (
-    <div className="container py-12">
+    <div className="container py-8 sm:py-12">
       <Link
         href="/servicios"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4 sm:mb-6"
       >
         <ArrowLeft className="h-4 w-4" /> Todos los servicios
       </Link>
 
-      <div className="grid md:grid-cols-2 gap-10 items-start">
+      <div className="grid md:grid-cols-2 gap-6 sm:gap-10 items-start">
         <div
           className="aspect-square rounded-lg bg-cover bg-center"
           style={{
@@ -30,12 +30,12 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
 
         <div>
           {service.category && (
-            <span className="text-sm text-primary font-medium uppercase tracking-wide">
+            <span className="text-xs sm:text-sm text-primary font-medium uppercase tracking-wide">
               {service.category.name}
             </span>
           )}
-          <h1 className="text-3xl md:text-4xl font-bold mt-2 mb-4">{service.name}</h1>
-          <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-2 mb-3 sm:mb-4">{service.name}</h1>
+          <p className="text-base sm:text-lg text-muted-foreground mb-5 sm:mb-6 leading-relaxed">
             {service.description}
           </p>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Tag, X } from "lucide-react";
+import { Loader2, CheckCircle2, Gift, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,10 +29,11 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-interface CouponEval {
-  coupon: { id: string; code: string; type: "PERCENT" | "FIXED"; value: number };
-  discountCents: number;
-  finalCents: number;
+interface GiftCardInfo {
+  code: string;
+  balanceCents: number;
+  initialCents: number;
+  applied: number; // cuánto se descontará en ESTA reserva
 }
 
 export function BookingForm({ services, preselectedServiceId }: Props) {
@@ -53,11 +54,11 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
   const [error, setError] = useState("");
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
 
-  // Cupón
-  const [couponCode, setCouponCode] = useState("");
-  const [couponEval, setCouponEval] = useState<CouponEval | null>(null);
-  const [couponError, setCouponError] = useState("");
-  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  // Gift Card
+  const [gcCode, setGcCode] = useState("");
+  const [giftCard, setGiftCard] = useState<GiftCardInfo | null>(null);
+  const [gcError, setGcError] = useState("");
+  const [validatingGc, setValidatingGc] = useState(false);
 
   const service = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
 
@@ -69,7 +70,7 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
       .catch(() => setStaffList([]));
   }, [serviceId]);
 
-  // Disponibilidad del día (opcional filtrada por staff)
+  // Disponibilidad del día
   useEffect(() => {
     if (!date) return;
     const q = staffId ? `?date=${date}&staffId=${staffId}` : `?date=${date}`;
@@ -89,28 +90,28 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
       .catch(() => setBusy([]));
   }, [date, staffId]);
 
-  async function validateCoupon() {
-    if (!couponCode || !service) return;
-    setCouponError("");
-    setValidatingCoupon(true);
+  async function validateGiftCard() {
+    if (!gcCode || !service) return;
+    setGcError("");
+    setValidatingGc(true);
     try {
-      const r = await api<CouponEval>("/coupons/validate", {
-        method: "POST",
-        json: { code: couponCode, basePriceCents: service.priceCents },
-      });
-      setCouponEval(r);
+      const r = await api<{ giftCard: { code: string; balanceCents: number; initialCents: number } }>(
+        `/gift-cards/balance/${encodeURIComponent(gcCode.trim())}`
+      );
+      const applied = Math.min(r.giftCard.balanceCents, service.priceCents);
+      setGiftCard({ ...r.giftCard, applied });
     } catch (e: any) {
-      setCouponError(e.message);
-      setCouponEval(null);
+      setGcError(e.message);
+      setGiftCard(null);
     } finally {
-      setValidatingCoupon(false);
+      setValidatingGc(false);
     }
   }
 
-  function removeCoupon() {
-    setCouponCode("");
-    setCouponEval(null);
-    setCouponError("");
+  function removeGiftCard() {
+    setGcCode("");
+    setGiftCard(null);
+    setGcError("");
   }
 
   async function handleSubmit() {
@@ -127,7 +128,7 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
           staffId: staffId || null,
           startAt,
           notes: notes || null,
-          couponCode: couponEval?.coupon.code ?? null,
+          giftCardCode: giftCard?.code ?? null,
         },
       });
       setCreatedBooking(result.booking);
@@ -155,20 +156,21 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
     }
   }
 
-  const finalPrice = couponEval?.finalCents ?? service?.priceCents ?? 0;
+  const finalPrice = service ? service.priceCents - (giftCard?.applied ?? 0) : 0;
+  const isFreeAfterGc = createdBooking && createdBooking.priceCents === 0;
 
   // PASO 3 - Confirmación
   if (step === 3 && createdBooking) {
     return (
       <Card>
-        <CardContent className="pt-8 text-center">
-          <CheckCircle2 className="h-16 w-16 mx-auto text-green-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">¡Reserva creada!</h2>
-          <p className="text-muted-foreground mb-6">
+        <CardContent className="pt-6 sm:pt-8 px-4 sm:px-6 text-center">
+          <CheckCircle2 className="h-14 sm:h-16 w-14 sm:w-16 mx-auto text-green-500 mb-3 sm:mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">¡Reserva creada!</h2>
+          <p className="text-sm sm:text-base text-muted-foreground mb-5 sm:mb-6">
             Tu cita para <strong>{service?.name}</strong> está agendada para el{" "}
             <strong>{date}</strong> a las <strong>{time}</strong>.
           </p>
-          <div className="bg-muted/40 rounded-lg p-4 mb-6 max-w-sm mx-auto text-left text-sm space-y-2">
+          <div className="bg-muted/40 rounded-lg p-4 mb-5 sm:mb-6 max-w-sm mx-auto text-left text-sm space-y-2">
             <p className="flex justify-between">
               <span className="text-muted-foreground">Servicio:</span>
               <span className="font-medium">{service?.name}</span>
@@ -183,14 +185,14 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
                   <span className="text-muted-foreground">Precio:</span>
                   <span>{formatMoney(createdBooking.basePriceCents)}</span>
                 </p>
-                <p className="flex justify-between text-green-700">
-                  <span>Descuento:</span>
+                <p className="flex justify-between text-primary">
+                  <span>Gift card:</span>
                   <span>− {formatMoney(createdBooking.discountCents)}</span>
                 </p>
               </>
             )}
             <p className="flex justify-between text-base pt-2 border-t">
-              <span className="font-semibold">Total:</span>
+              <span className="font-semibold">Total a pagar:</span>
               <span className="font-bold text-primary">
                 {formatMoney(createdBooking.priceCents)}
               </span>
@@ -198,16 +200,20 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
           </div>
           {error && <p className="text-destructive text-sm mb-4">{error}</p>}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" onClick={payNow} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Pagar ahora con tarjeta
-            </Button>
+            {!isFreeAfterGc && (
+              <Button size="lg" onClick={payNow} disabled={submitting}>
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                Pagar ahora con tarjeta
+              </Button>
+            )}
             <Button variant="outline" size="lg" onClick={() => router.push("/")}>
-              Pagar en el spa
+              {isFreeAfterGc ? "Listo, ir al inicio" : "Pagar en el spa"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            Tu reserva queda confirmada al recibir el pago.
+            {isFreeAfterGc
+              ? "Tu reserva está cubierta por la gift card. Te esperamos."
+              : "Tu reserva queda confirmada al recibir el pago."}
           </p>
         </CardContent>
       </Card>
@@ -217,11 +223,11 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="text-lg sm:text-xl">
           Paso {step} de 2: {step === 1 ? "Servicio y horario" : "Tus datos"}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5 sm:space-y-6 px-4 sm:px-6">
         {step === 1 && (
           <>
             <div className="space-y-2">
@@ -232,8 +238,8 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
                 onChange={(e) => {
                   setServiceId(e.target.value);
                   setStaffId("");
-                  setCouponEval(null);
-                  setCouponCode("");
+                  setGiftCard(null);
+                  setGcCode("");
                 }}
               >
                 <option value="">— Selecciona un servicio —</option>
@@ -287,7 +293,7 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
             {date && !dayClosed.closed && (
               <div className="space-y-2">
                 <Label>Hora disponible</Label>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {SLOTS.map((slot) => {
                     const occupied = busy.includes(slot);
                     return (
@@ -296,7 +302,7 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
                         type="button"
                         disabled={occupied}
                         onClick={() => setTime(slot)}
-                        className={`px-2 py-2 text-sm rounded-md border transition-colors ${
+                        className={`px-2 py-2.5 text-sm rounded-md border transition-colors ${
                           time === slot
                             ? "bg-primary text-primary-foreground border-primary"
                             : occupied
@@ -359,41 +365,60 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
               />
             </div>
 
-            {/* Cupón */}
-            <div className="space-y-2">
-              <Label>Cupón de descuento (opcional)</Label>
-              {couponEval ? (
-                <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-md">
-                  <Tag className="h-4 w-4 text-green-700" />
-                  <span className="font-mono font-semibold text-sm">{couponEval.coupon.code}</span>
-                  <span className="text-sm text-green-700 flex-1">
-                    {couponEval.coupon.type === "PERCENT"
-                      ? `${couponEval.coupon.value}% off`
-                      : `−${formatMoney(couponEval.coupon.value)}`}
-                  </span>
-                  <button onClick={removeCoupon} className="text-muted-foreground hover:text-foreground">
-                    <X className="h-4 w-4" />
-                  </button>
+            {/* Gift Card */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="flex items-center gap-2">
+                <Gift className="h-4 w-4 text-primary" /> Gift Card (opcional)
+              </Label>
+              {giftCard ? (
+                <div className="p-3 bg-primary/5 border border-primary/30 rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-mono font-semibold text-sm">{giftCard.code}</span>
+                    <button
+                      onClick={removeGiftCard}
+                      className="ml-auto text-muted-foreground hover:text-foreground"
+                      type="button"
+                      aria-label="Quitar gift card"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <p>Saldo disponible: {formatMoney(giftCard.balanceCents)}</p>
+                    <p className="text-primary font-medium">
+                      Se aplicará: {formatMoney(giftCard.applied)}
+                      {giftCard.applied < giftCard.balanceCents &&
+                        ` (quedará ${formatMoney(giftCard.balanceCents - giftCard.applied)} para próxima)`}
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="CÓDIGO"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    className="font-mono"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={validateCoupon}
-                    disabled={!couponCode || validatingCoupon}
-                  >
-                    {validatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aplicar"}
-                  </Button>
-                </div>
+                <>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="XXXX-XXXX-XXXX"
+                      value={gcCode}
+                      onChange={(e) => setGcCode(e.target.value.toUpperCase())}
+                      className="font-mono"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={validateGiftCard}
+                      disabled={!gcCode || validatingGc}
+                    >
+                      {validatingGc ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aplicar"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    ¿Aún no tienes una?{" "}
+                    <a href="/gift-cards" className="text-primary hover:underline">
+                      Compra una aquí
+                    </a>
+                  </p>
+                </>
               )}
-              {couponError && <p className="text-xs text-destructive">{couponError}</p>}
+              {gcError && <p className="text-xs text-destructive">{gcError}</p>}
             </div>
 
             {service && (
@@ -402,14 +427,14 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
                   <span>{service.name}</span>
                   <span>{formatMoney(service.priceCents)}</span>
                 </p>
-                {couponEval && (
-                  <p className="flex justify-between text-green-700">
-                    <span>Descuento ({couponEval.coupon.code}):</span>
-                    <span>− {formatMoney(couponEval.discountCents)}</span>
+                {giftCard && (
+                  <p className="flex justify-between text-primary">
+                    <span>Gift card ({giftCard.code}):</span>
+                    <span>− {formatMoney(giftCard.applied)}</span>
                   </p>
                 )}
                 <p className="flex justify-between pt-1 border-t font-semibold">
-                  <span>Total:</span>
+                  <span>Total a pagar:</span>
                   <span className="text-primary">{formatMoney(finalPrice)}</span>
                 </p>
                 <p className="text-muted-foreground text-xs">

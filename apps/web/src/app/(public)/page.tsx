@@ -27,9 +27,9 @@ export default async function HomePage() {
 
       {/* CÓMO FUNCIONA */}
       <section className="container py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3">Cómo funciona</h2>
-          <p className="text-muted-foreground">Reserva tu momento de bienestar en 3 pasos</p>
+        <div className="text-center mb-10 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3">Cómo funciona</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Reserva tu momento de bienestar en 3 pasos</p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {[
@@ -53,10 +53,10 @@ export default async function HomePage() {
       {/* SERVICIOS DESTACADOS */}
       {featured.length > 0 && (
         <section className="container py-16">
-          <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
+          <div className="flex flex-wrap items-end justify-between mb-6 sm:mb-8 gap-4">
             <div>
-              <h2 className="text-3xl font-bold">Servicios destacados</h2>
-              <p className="text-muted-foreground">Lo más solicitado por nuestros clientes</p>
+              <h2 className="text-2xl sm:text-3xl font-bold">Servicios destacados</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">Lo más solicitado por nuestros clientes</p>
             </div>
             <Button asChild variant="outline">
               <Link href="/servicios">Ver todos →</Link>
@@ -95,9 +95,9 @@ export default async function HomePage() {
       {categories.length > 0 && (
         <section className="bg-muted/40 py-16">
           <div className="container">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold mb-3">Categorías</h2>
-              <p className="text-muted-foreground">Encuentra el tratamiento ideal</p>
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">Categorías</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">Encuentra el tratamiento ideal</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
               {categories.map((c: Category) => (
@@ -120,10 +120,10 @@ export default async function HomePage() {
       {/* CTA WHATSAPP */}
       <section className="container py-16">
         <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-          <CardContent className="p-10 text-center">
-            <MessageSquare className="h-12 w-12 mx-auto text-primary mb-4" />
-            <h2 className="text-2xl font-bold mb-3">¿Tienes preguntas?</h2>
-            <p className="text-muted-foreground mb-6">
+          <CardContent className="p-6 sm:p-10 text-center">
+            <MessageSquare className="h-10 sm:h-12 w-10 sm:w-12 mx-auto text-primary mb-4" />
+            <h2 className="text-xl sm:text-2xl font-bold mb-3">¿Tienes preguntas?</h2>
+            <p className="text-sm sm:text-base text-muted-foreground mb-6">
               Escríbenos directamente por WhatsApp y te atenderemos al instante.
             </p>
             <Button asChild size="lg">

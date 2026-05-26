@@ -87,6 +87,24 @@ export interface ClosedDate {
   reason: string | null;
 }
 
+export interface GiftCard {
+  id: string;
+  code: string;
+  initialCents: number;
+  balanceCents: number;
+  currency: string;
+  status: "PENDING_PAYMENT" | "ACTIVE" | "USED_UP" | "EXPIRED" | "REFUNDED" | "CANCELLED";
+  purchaserName: string;
+  purchaserEmail: string;
+  recipientName: string | null;
+  recipientEmail: string | null;
+  message: string | null;
+  paidAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  _count?: { redemptions: number };
+}
+
 export interface SecurityEvent {
   id: string;
   type: string;

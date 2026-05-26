@@ -31,12 +31,28 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Evita que iOS Safari aumente el font-size en landscape */
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+    /* Mejora suavizado en móvil */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .container {
     max-width: var(--container-width);
+  }
+  /* Touch targets accesibles en móvil */
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Evita overflow horizontal por imágenes o elementos sin control */
+  img, video {
+    max-width: 100%;
+    height: auto;
   }
 }
 

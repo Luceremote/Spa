@@ -6,6 +6,7 @@ import { env } from "../env.js";
 import { HttpError } from "../middleware/error.js";
 import { logSecurityEvent } from "../security/events.js";
 import { sendMail, bookingPaidEmail } from "../mail.js";
+import { activateGiftCard } from "./giftcards.js";
 
 export const paymentsRouter = Router();
 
@@ -116,6 +117,21 @@ export const stripeWebhookHandler = [
       // Idempotencia simple: si el booking ya está PAID, ignora el event
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
+        const type = session.metadata?.type;
+
+        // Gift card compras
+        if (type === "gift_card") {
+          const giftCardId = session.metadata?.giftCardId;
+          if (!giftCardId) return res.status(400).send("metadata.giftCardId requerido");
+          const pi = typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id ?? null;
+          await activateGiftCard(giftCardId, pi);
+          await logSecurityEvent({ type: "WEBHOOK_OK", req, meta: { event: event.type, giftCardId } });
+          return res.json({ received: true, kind: "gift_card" });
+        }
+
+        // Pago de reserva (flujo original)
         const bookingId = session.metadata?.bookingId;
         if (!bookingId) return res.status(400).send("metadata.bookingId requerido");
 

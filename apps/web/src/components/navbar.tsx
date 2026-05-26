@@ -14,6 +14,7 @@ const LINKS = [
   { href: "/", label: "Inicio" },
   { href: "/servicios", label: "Servicios" },
   { href: "/reservar", label: "Reservar" },
+  { href: "/gift-cards", label: "Gift Cards" },
   { href: "/mis-reservas", label: "Mis reservas" },
   { href: "/contacto", label: "Contacto" },
 ];

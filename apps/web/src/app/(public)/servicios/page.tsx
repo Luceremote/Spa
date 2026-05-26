@@ -17,10 +17,10 @@ export default async function ServiciosPage({
     : services;
 
   return (
-    <div className="container py-12">
-      <header className="mb-10 text-center">
-        <h1 className="text-4xl font-bold mb-3">Nuestros Servicios</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
+    <div className="container py-8 sm:py-12">
+      <header className="mb-8 sm:mb-10 text-center">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3">Nuestros Servicios</h1>
+        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
           Cada tratamiento está diseñado para brindarte una experiencia única de relajación y bienestar.
         </p>
       </header>
