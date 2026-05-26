@@ -14,11 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.spa"
+      "bundleIdentifier": "com.xlsaga.spa"
     },
     "android": {
       "adaptiveIcon": { "backgroundColor": "#fbe9f0" },
-      "package": "com.example.spa"
+      "package": "com.xlsaga.spa"
     },
     "web": {
       "bundler": "metro",
@@ -27,11 +27,8 @@
     "plugins": ["expo-router"],
     "experiments": { "typedRoutes": true },
     "extra": {
-      "apiUrl": "https://spa-api-sfx7.onrender.com/api",
-      "eas": {
-        "projectId": "REEMPLAZAR_DESPUES_DE_eas_init"
-      }
+      "apiUrl": "https://spa-api-sfx7.onrender.com/api"
     },
-    "owner": "REEMPLAZAR_TU_USUARIO_EXPO"
+    "owner": "xlsaga"
   }
 }
