@@ -141,6 +141,16 @@ export interface Theme {
   template: "elegant" | "modern" | "minimal" | "luxury";
 }
 
+export interface HoursByDay {
+  mon?: string;
+  tue?: string;
+  wed?: string;
+  thu?: string;
+  fri?: string;
+  sat?: string;
+  sun?: string;
+}
+
 export interface SiteConfig {
   id: string;
   spaName: string;
@@ -149,9 +159,32 @@ export interface SiteConfig {
   heroImageUrl: string | null;
   whatsappPhone: string;
   whatsappMsg: string;
+  callPhone: string | null;
   email: string | null;
   address: string | null;
+  googleMapsUrl: string | null;
   openingHours: string | null;
+  hoursByDay: HoursByDay | null;
+  aboutTitle: string | null;
+  aboutText: string | null;
+  aboutImageUrl: string | null;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  tiktokUrl: string | null;
+  twitterUrl: string | null;
+  youtubeUrl: string | null;
+  cancellationPolicy: string | null;
+  privacyPolicy: string | null;
+  termsOfService: string | null;
+}
+
+export interface Photo {
+  id: string;
+  url: string;
+  caption: string | null;
+  order: number;
+  active: boolean;
+  createdAt: string;
 }
 
 export interface User {

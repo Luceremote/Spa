@@ -27,9 +27,23 @@ const DEFAULT_CONFIG: SiteConfig = {
   heroImageUrl: null,
   whatsappPhone: "15555555555",
   whatsappMsg: "Hola, me gustaría reservar un servicio",
+  callPhone: null,
   email: null,
   address: null,
+  googleMapsUrl: null,
   openingHours: null,
+  hoursByDay: null,
+  aboutTitle: null,
+  aboutText: null,
+  aboutImageUrl: null,
+  instagramUrl: null,
+  facebookUrl: null,
+  tiktokUrl: null,
+  twitterUrl: null,
+  youtubeUrl: null,
+  cancellationPolicy: null,
+  privacyPolicy: null,
+  termsOfService: null,
 };
 
 export async function fetchTheme(): Promise<Theme> {
@@ -84,5 +98,16 @@ export async function fetchServiceBySlug(slug: string) {
     return data.service ?? null;
   } catch {
     return null;
+  }
+}
+
+export async function fetchPhotos(): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_URL}/photos`, { next: { revalidate: 30 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.photos ?? [];
+  } catch {
+    return [];
   }
 }

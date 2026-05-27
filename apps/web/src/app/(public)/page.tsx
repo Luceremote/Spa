@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, Calendar, CreditCard, MessageSquare } from "lucide-react";
+import { Sparkles, Calendar, CreditCard, MessageSquare, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Hero } from "@/components/landing/hero";
@@ -8,18 +8,21 @@ import {
   fetchSiteConfig,
   fetchCategories,
   fetchTheme,
+  fetchPhotos,
 } from "@/lib/server-fetch";
 import { formatMoney } from "@/lib/utils";
-import type { Service, Category } from "@/lib/types";
+import type { Service, Category, Photo } from "@/lib/types";
 
 export default async function HomePage() {
-  const [services, config, categories, theme] = await Promise.all([
+  const [services, config, categories, theme, photos] = await Promise.all([
     fetchServices(),
     fetchSiteConfig(),
     fetchCategories(),
     fetchTheme(),
+    fetchPhotos(),
   ]);
   const featured: Service[] = services.filter((s: Service) => s.featured).slice(0, 3);
+  const galleryPreview: Photo[] = photos.slice(0, 6);
 
   return (
     <>
@@ -113,6 +116,62 @@ export default async function HomePage() {
                 </Link>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* SOBRE NOSOTROS */}
+      {(config.aboutText || config.aboutImageUrl) && (
+        <section className="container py-12 sm:py-16">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+            <div className={config.aboutImageUrl ? "" : "md:col-span-2 max-w-2xl mx-auto text-center"}>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4">
+                Sobre nosotros
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+                {config.aboutTitle ?? `Conoce ${config.spaName}`}
+              </h2>
+              {config.aboutText && (
+                <div className="text-sm sm:text-base text-muted-foreground leading-relaxed space-y-3">
+                  {config.aboutText.split("\n").slice(0, 3).map((p, i) =>
+                    p.trim() ? <p key={i}>{p}</p> : null
+                  )}
+                </div>
+              )}
+              <Button asChild variant="link" className="mt-4 px-0">
+                <Link href="/sobre">Leer más <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+            </div>
+            {config.aboutImageUrl && (
+              <div
+                className="aspect-[4/5] rounded-2xl bg-cover bg-center shadow-xl order-first md:order-last"
+                style={{ backgroundImage: `url('${config.aboutImageUrl}')` }}
+              />
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* GALERÍA PREVIEW */}
+      {galleryPreview.length > 0 && (
+        <section className="container py-12 sm:py-16">
+          <div className="flex flex-wrap items-end justify-between mb-6 sm:mb-8 gap-4">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold">Nuestro trabajo</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">Resultados que hablan por sí solos</p>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/galeria">Ver galería completa →</Link>
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
+            {galleryPreview.map((p) => (
+              <div
+                key={p.id}
+                className="aspect-square bg-cover bg-center rounded-lg overflow-hidden"
+                style={{ backgroundImage: `url('${p.url}')` }}
+              />
+            ))}
           </div>
         </section>
       )}

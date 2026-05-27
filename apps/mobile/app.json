@@ -1,34 +1,37 @@
 {
   "expo": {
     "name": "Spa",
-    "slug": "spa-mobile",
+    "slug": "spa-software",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "spa",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
-    "splash": {
-      "backgroundColor": "#fbe9f0",
-      "resizeMode": "contain"
-    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.xlsaga.spa"
+      "bundleIdentifier": "com.xlucero.spasoftware"
     },
     "android": {
-      "adaptiveIcon": { "backgroundColor": "#fbe9f0" },
-      "package": "com.xlsaga.spa"
+      "package": "com.xlucero.spasoftware"
     },
     "web": {
       "bundler": "metro",
       "output": "static"
     },
     "plugins": ["expo-router"],
-    "experiments": { "typedRoutes": true },
-    "extra": {
-      "apiUrl": "https://spa-api-sfx7.onrender.com/api"
+    "experiments": {
+      "typedRoutes": true
     },
-    "owner": "xlsaga"
+    "extra": {
+      "apiUrl": "https://spa-api-sfx7.onrender.com/api",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "8f2c0425-b434-49bf-8693-90f50568d9f5"
+      }
+    },
+    "owner": "x-lucero"
   }
 }

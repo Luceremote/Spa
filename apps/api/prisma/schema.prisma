@@ -264,10 +264,41 @@ model SiteConfig {
   heroImageUrl  String?
   whatsappPhone String   @default("15555555555")
   whatsappMsg   String   @default("Hola, me gustaría reservar un servicio")
+  callPhone     String?  // teléfono separado para llamar (puede ser distinto del WhatsApp)
   email         String?
   address       String?
-  openingHours  String?
+  googleMapsUrl String?  // URL embed o de búsqueda en Google Maps
+  openingHours  String?  // resumen legible: "Lun-Sáb 9:00-19:00"
+  // Horarios desglosados (JSON con keys mon, tue, wed, thu, fri, sat, sun → "10:00-19:00" o "Cerrado")
+  hoursByDay    Json?
+  // Bio / sobre nosotros
+  aboutTitle    String?
+  aboutText     String?  // párrafo largo, puede tener múltiples líneas
+  aboutImageUrl String?
+  // Redes sociales (URLs completas)
+  instagramUrl  String?
+  facebookUrl   String?
+  tiktokUrl     String?
+  twitterUrl    String?
+  youtubeUrl    String?
+  // Políticas (texto largo, formato markdown opcional)
+  cancellationPolicy String?
+  privacyPolicy      String?
+  termsOfService     String?
   updatedAt     DateTime @updatedAt
+}
+
+// Fotos de la galería pública del spa
+model Photo {
+  id          String   @id @default(cuid())
+  url         String
+  caption     String?
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, order])
 }
 
 model Theme {
