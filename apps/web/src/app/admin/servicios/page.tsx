@@ -258,8 +258,12 @@ export default function ServiciosAdminPage() {
                 <Label>Slug (URL)</Label>
                 <Input
                   value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: slugify(e.target.value) }))}
+                  placeholder="se-genera-solo"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Solo minúsculas y guiones. Se normaliza automáticamente.
+                </p>
               </div>
             </div>
 

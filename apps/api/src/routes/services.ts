@@ -39,11 +39,25 @@ servicesRouter.get("/:slug", async (req, res, next) => {
   }
 });
 
-const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/;
+// Normaliza cualquier texto a un slug válido (minúsculas, sin acentos, guiones)
+function toSlug(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 100);
+}
 
 const serviceSchema = z.object({
   name: z.string().min(1).max(120).transform((s) => sanitizeText(s, 120)),
-  slug: z.string().min(1).max(100).regex(SLUG_RE, "Slug inválido"),
+  // Aceptamos cualquier texto y lo normalizamos a slug válido (tolerante a mayúsculas/espacios)
+  slug: z.string().min(1).max(120).transform(toSlug).refine((s) => s.length >= 1, {
+    message: "Slug inválido",
+  }),
   description: z.string().min(1).max(2000).transform((s) => sanitizeText(s, 2000)),
   priceCents: z.number().int().nonnegative().max(10_000_000), // $100k tope
   durationMinutes: z.number().int().positive().max(24 * 60),
