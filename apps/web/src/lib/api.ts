@@ -59,6 +59,8 @@ export async function uploadImage(file: File, token: string): Promise<{ url: str
     throw new Error(msg);
   }
   const data = await res.json();
-  // url viene como "/uploads/xxx"; convertimos a absoluta para usar desde la web
-  return { url: `${API_BASE}${data.url}`, mime: data.mime };
+  // Con storage local la url es relativa ("/uploads/xxx") → la hacemos absoluta.
+  // Con S3/R2 ya viene absoluta ("https://...") → la dejamos tal cual.
+  const url: string = /^https?:\/\//.test(data.url) ? data.url : `${API_BASE}${data.url}`;
+  return { url, mime: data.mime };
 }
