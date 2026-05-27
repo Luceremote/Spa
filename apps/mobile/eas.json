@@ -6,6 +6,7 @@
   "build": {
     "preview": {
       "distribution": "internal",
+      "node": "20.18.0",
       "android": {
         "buildType": "apk"
       },
@@ -15,6 +16,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "node": "20.18.0",
       "android": {
         "buildType": "app-bundle"
       },

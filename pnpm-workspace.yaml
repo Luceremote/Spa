@@ -1,6 +1,10 @@
 packages:
-  - "apps/*"
+  - "apps/api"
+  - "apps/web"
   - "packages/*"
+  # apps/mobile NO está en el workspace: se maneja standalone con npm
+  # (por compatibilidad con EAS Build que viene con pnpm 8.x antiguo).
+  # Para dev local: cd apps/mobile && npm install && npm run dev
 
 # Permitir scripts post-install necesarios (Prisma genera cliente, esbuild compila binarios)
 allowBuilds:

@@ -1,0 +1,13 @@
+# Mismo contenido que .gitignore pero para EAS cuando no usa git (EAS_NO_VCS=1)
+node_modules/
+.expo/
+.expo-shared/
+web-build/
+dist/
+expo-env.d.ts
+.env
+.env.local
+.env.*.local
+!.env.example
+*.log
+.DS_Store

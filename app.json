@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "8f2c0425-b434-49bf-8693-90f50568d9f5"
+      }
+    },
+    "android": {
+      "package": "com.xlucero.spasoftware"
+    }
+  }
+}
