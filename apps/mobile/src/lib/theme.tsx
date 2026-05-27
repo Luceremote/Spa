@@ -95,3 +95,44 @@ export function useTheme() {
 export function formatMoney(cents: number, currency = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
 }
+
+// Radio de bordes derivado del tema (con fallback)
+export function radius(theme: Theme, scale = 1): number {
+  const base = Number(String(theme.borderRadius).replace(/[^0-9.]/g, "")) || 12;
+  return base * scale;
+}
+
+// Sombras consistentes para iOS + Android
+export const shadow = {
+  sm: {
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  md: {
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+} as const;
+
+// Espaciado consistente (escala de 4)
+export const space = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+} as const;

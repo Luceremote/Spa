@@ -1,26 +1,26 @@
 import React from "react";
 import { View, ViewProps } from "react-native";
-import { hsl, useTheme } from "../lib/theme";
+import { hsl, useTheme, radius, shadow } from "../lib/theme";
 
-export function Card({ children, style, ...rest }: ViewProps) {
+interface Props extends ViewProps {
+  elevated?: boolean;
+  padded?: boolean;
+}
+
+export function Card({ children, style, elevated = true, padded = true, ...rest }: Props) {
   const { theme } = useTheme();
-  const radius = Number(String(theme.borderRadius).replace(/[^0-9.]/g, "")) || 12;
   return (
     <View
       {...rest}
       style={[
         {
           backgroundColor: "#fff",
-          borderRadius: radius,
-          padding: 16,
+          borderRadius: radius(theme, 1.15),
+          padding: padded ? 16 : 0,
           borderWidth: 1,
-          borderColor: hsl(theme.colorMuted),
-          shadowColor: "#000",
-          shadowOpacity: 0.06,
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 6,
-          elevation: 2,
+          borderColor: hsl(theme.colorMuted, 0.6),
         },
+        elevated ? shadow.sm : null,
         style,
       ]}
     >

@@ -160,8 +160,8 @@ export default function PersonalizacionPage() {
     setSavedMsg("");
     try {
       await api("/theme", { token, method: "PUT", json: theme });
-      setSavedMsg("Guardado ✓");
-      setTimeout(() => setSavedMsg(""), 2500);
+      setSavedMsg("Guardado ✓ — aplicado al sitio público");
+      setTimeout(() => setSavedMsg(""), 4000);
     } catch (e: any) {
       alert(e.message);
     } finally {

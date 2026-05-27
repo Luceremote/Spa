@@ -48,7 +48,7 @@ const DEFAULT_CONFIG: SiteConfig = {
 
 export async function fetchTheme(): Promise<Theme> {
   try {
-    const res = await fetch(`${API_URL}/theme`, { next: { revalidate: 30 } });
+    const res = await fetch(`${API_URL}/theme`, { cache: "no-store" });
     if (!res.ok) return DEFAULT_THEME;
     const data = await res.json();
     return data.theme ?? DEFAULT_THEME;
@@ -59,7 +59,7 @@ export async function fetchTheme(): Promise<Theme> {
 
 export async function fetchSiteConfig(): Promise<SiteConfig> {
   try {
-    const res = await fetch(`${API_URL}/site-config`, { next: { revalidate: 30 } });
+    const res = await fetch(`${API_URL}/site-config`, { cache: "no-store" });
     if (!res.ok) return DEFAULT_CONFIG;
     const data = await res.json();
     return data.config ?? DEFAULT_CONFIG;

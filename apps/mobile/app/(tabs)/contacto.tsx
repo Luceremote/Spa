@@ -1,111 +1,95 @@
-import { View, Text, ScrollView, Linking, StyleSheet } from "react-native";
+import { View, Text, ScrollView, Linking, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { hsl, useTheme } from "../../src/lib/theme";
+import { hsl, useTheme, radius } from "../../src/lib/theme";
 import { Card } from "../../src/components/Card";
 import { Button } from "../../src/components/Button";
+import { InfoRow } from "../../src/components/ui";
+
+const SOCIALS: { key: string; icon: keyof typeof Ionicons.glyphMap; field: string }[] = [
+  { key: "ig", icon: "logo-instagram", field: "instagramUrl" },
+  { key: "fb", icon: "logo-facebook", field: "facebookUrl" },
+  { key: "tt", icon: "logo-tiktok", field: "tiktokUrl" },
+  { key: "tw", icon: "logo-twitter", field: "twitterUrl" },
+  { key: "yt", icon: "logo-youtube", field: "youtubeUrl" },
+];
 
 export default function Contacto() {
   const { theme, config } = useTheme();
+  const primary = hsl(theme.colorPrimary);
   const waUrl = `https://wa.me/${config.whatsappPhone}?text=${encodeURIComponent(config.whatsappMsg)}`;
+  const socials = SOCIALS.filter((s) => (config as any)[s.field]);
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: hsl(theme.colorBackground) }}
-      contentContainerStyle={{ padding: 20, gap: 14 }}
+      contentContainerStyle={{ padding: 16, gap: 14 }}
+      showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.h1, { color: hsl(theme.colorForeground) }]}>Contáctanos</Text>
-
-      {config.address && (
-        <InfoCard
-          icon="location"
-          label="Dirección"
-          value={config.address}
-          color={hsl(theme.colorPrimary)}
-        />
-      )}
-      <InfoCard
-        icon="call"
-        label="Teléfono / WhatsApp"
-        value={`+${config.whatsappPhone}`}
-        color={hsl(theme.colorPrimary)}
-        onPress={() => Linking.openURL(`tel:+${config.whatsappPhone}`)}
-      />
-      {config.email && (
-        <InfoCard
-          icon="mail"
-          label="Email"
-          value={config.email}
-          color={hsl(theme.colorPrimary)}
-          onPress={() => Linking.openURL(`mailto:${config.email}`)}
-        />
-      )}
-      {config.openingHours && (
-        <InfoCard
-          icon="time"
-          label="Horario"
-          value={config.openingHours}
-          color={hsl(theme.colorPrimary)}
-        />
-      )}
-
-      <Card style={{ alignItems: "center", padding: 24, marginTop: 8 }}>
-        <Ionicons name="logo-whatsapp" size={48} color="#25D366" />
-        <Text style={[styles.h2, { color: hsl(theme.colorForeground), marginTop: 8 }]}>
-          Chat directo
+      {/* WhatsApp destacado */}
+      <Card style={{ alignItems: "center", paddingVertical: 28 }}>
+        <View style={[styles.waIcon, { backgroundColor: "#25D366" }]}>
+          <Ionicons name="logo-whatsapp" size={32} color="#fff" />
+        </View>
+        <Text style={[styles.h2, { color: hsl(theme.colorForeground), marginTop: 14 }]}>
+          Escríbenos por WhatsApp
         </Text>
-        <Text style={{ color: "#666", textAlign: "center", marginVertical: 12 }}>
-          La forma más rápida de comunicarte con nosotros.
-        </Text>
-        <Button title="Abrir WhatsApp" onPress={() => Linking.openURL(waUrl)} />
+        <Text style={styles.sub}>La forma más rápida de contactarnos</Text>
+        <View style={{ marginTop: 16, width: "100%" }}>
+          <Button
+            title="Abrir WhatsApp"
+            fullWidth
+            icon={<Ionicons name="logo-whatsapp" size={18} color="#fff" />}
+            onPress={() => Linking.openURL(waUrl)}
+          />
+        </View>
       </Card>
+
+      {/* Datos de contacto */}
+      <Card style={{ gap: 16 }}>
+        {config.address && (
+          <InfoRow icon="location-outline" label="Dirección" value={config.address} />
+        )}
+        <Pressable onPress={() => Linking.openURL(`tel:+${config.whatsappPhone}`)}>
+          <InfoRow icon="call-outline" label="Teléfono" value={`+${config.whatsappPhone}`} />
+        </Pressable>
+        {config.email && (
+          <Pressable onPress={() => Linking.openURL(`mailto:${config.email}`)}>
+            <InfoRow icon="mail-outline" label="Email" value={config.email} />
+          </Pressable>
+        )}
+        {config.openingHours && (
+          <InfoRow icon="time-outline" label="Horario" value={config.openingHours} />
+        )}
+      </Card>
+
+      {/* Redes sociales */}
+      {socials.length > 0 && (
+        <Card style={{ alignItems: "center", paddingVertical: 22 }}>
+          <Text style={[styles.h2, { color: hsl(theme.colorForeground), marginBottom: 4 }]}>Síguenos</Text>
+          <Text style={styles.sub}>Novedades y promociones</Text>
+          <View style={styles.socialRow}>
+            {socials.map((s) => (
+              <Pressable
+                key={s.key}
+                onPress={() => Linking.openURL((config as any)[s.field])}
+                style={[styles.socialBtn, { backgroundColor: hsl(theme.colorPrimary, 0.1), borderRadius: radius(theme, 1.5) }]}
+              >
+                <Ionicons name={s.icon} size={24} color={primary} />
+              </Pressable>
+            ))}
+          </View>
+        </Card>
+      )}
+
+      <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
 
-function InfoCard({
-  icon,
-  label,
-  value,
-  color,
-  onPress,
-}: {
-  icon: any;
-  label: string;
-  value: string;
-  color: string;
-  onPress?: () => void;
-}) {
-  const Inner = (
-    <Card style={{ flexDirection: "row", gap: 14, padding: 14 }}>
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: color + "22",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Ionicons name={icon} size={20} color={color} />
-      </View>
-      <View style={{ flex: 1, justifyContent: "center" }}>
-        <Text style={{ fontSize: 12, color: "#888" }}>{label}</Text>
-        <Text style={{ fontSize: 15, fontWeight: "500", marginTop: 2 }}>{value}</Text>
-      </View>
-    </Card>
-  );
-  if (onPress) {
-    return (
-      <View onTouchEnd={onPress}>
-        {Inner}
-      </View>
-    );
-  }
-  return Inner;
-}
-
 const styles = StyleSheet.create({
-  h1: { fontSize: 28, fontWeight: "700", marginBottom: 4 },
-  h2: { fontSize: 20, fontWeight: "700" },
+  waIcon: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
+  h2: { fontSize: 19, fontWeight: "800" },
+  sub: { fontSize: 13.5, color: "#888", marginTop: 2, textAlign: "center" },
+  socialRow: { flexDirection: "row", gap: 12, marginTop: 16, flexWrap: "wrap", justifyContent: "center" },
+  socialBtn: { width: 52, height: 52, alignItems: "center", justifyContent: "center" },
 });
