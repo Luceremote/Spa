@@ -53,5 +53,7 @@ EXPOSE 4000
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Aplica migraciones pendientes (idempotente) y arranca
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# Aplica migraciones con reintentos (Neon free "duerme" y la 1ª conexión hace timeout
+# en el advisory lock; reintentar despierta la DB). El server arranca igual aunque
+# migrate no aplique nada nuevo (las tablas ya existen tras el 1er deploy).
+CMD ["sh", "-c", "for i in 1 2 3 4 5 6; do npx prisma migrate deploy && break || (echo \"[entrypoint] migrate intento $i fallo, reintento en 6s...\"; sleep 6); done; node dist/server.js"]
