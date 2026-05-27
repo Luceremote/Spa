@@ -54,6 +54,7 @@ export function Navbar({ config }: Props) {
   );
 
   return (
+    <>
     <header className="sticky top-0 z-40 w-full border-b bg-header/95 backdrop-blur supports-[backdrop-filter]:bg-header/80">
       <div className="container flex h-16 items-center justify-between gap-3">
         {Logo}
@@ -97,11 +98,13 @@ export function Navbar({ config }: Props) {
           </button>
         </div>
       </div>
+    </header>
 
-      {/* Drawer móvil */}
+      {/* Drawer móvil — FUERA del <header> porque su backdrop-blur crea un
+          containing block que atraparía el position:fixed y lo dejaría invisible */}
       <div
         className={cn(
-          "fixed inset-0 z-50 lg:hidden transition-opacity duration-200",
+          "fixed inset-0 z-[60] lg:hidden transition-opacity duration-200",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
       >
@@ -153,6 +156,6 @@ export function Navbar({ config }: Props) {
           </div>
         </aside>
       </div>
-    </header>
+    </>
   );
 }
