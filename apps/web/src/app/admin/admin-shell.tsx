@@ -20,6 +20,8 @@ import {
   Menu,
   X,
   Camera,
+  Star,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, getToken, setToken } from "@/lib/api";
@@ -35,6 +37,8 @@ const NAV = [
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/galeria", label: "Galería", icon: Camera },
+  { href: "/admin/resenas", label: "Reseñas", icon: Star },
+  { href: "/admin/suscriptores", label: "Newsletter", icon: Mail },
   { href: "/admin/cierres", label: "Días cerrados", icon: CalendarX },
   { href: "/admin/personalizacion", label: "Personalización", icon: Palette },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },

@@ -9,20 +9,26 @@ import {
   fetchCategories,
   fetchTheme,
   fetchPhotos,
+  fetchReviews,
 } from "@/lib/server-fetch";
+import { Stars } from "@/components/stars";
 import { formatMoney } from "@/lib/utils";
-import type { Service, Category, Photo } from "@/lib/types";
+import type { Service, Category, Photo, Review } from "@/lib/types";
 
 export default async function HomePage() {
-  const [services, config, categories, theme, photos] = await Promise.all([
+  const [services, config, categories, theme, photos, reviews] = await Promise.all([
     fetchServices(),
     fetchSiteConfig(),
     fetchCategories(),
     fetchTheme(),
     fetchPhotos(),
+    fetchReviews({ featured: true, limit: 6 }),
   ]);
   const featured: Service[] = services.filter((s: Service) => s.featured).slice(0, 3);
   const galleryPreview: Photo[] = photos.slice(0, 6);
+  const topReviews: Review[] = reviews.slice(0, 3);
+  const avgRating =
+    reviews.length > 0 ? reviews.reduce((s: number, r: Review) => s + r.rating, 0) / reviews.length : 0;
 
   return (
     <>
@@ -172,6 +178,47 @@ export default async function HomePage() {
                 style={{ backgroundImage: `url('${p.url}')` }}
               />
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* RESEÑAS */}
+      {topReviews.length > 0 && (
+        <section className="bg-muted/40 py-12 sm:py-16">
+          <div className="container max-w-5xl">
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">Lo que dicen nuestros clientes</h2>
+              {avgRating > 0 && (
+                <div className="inline-flex items-center gap-2">
+                  <Stars value={Math.round(avgRating)} size={18} />
+                  <span className="font-medium">{avgRating.toFixed(1)}</span>
+                  <span className="text-sm text-muted-foreground">({reviews.length} reseñas)</span>
+                </div>
+              )}
+            </div>
+            <div className="grid md:grid-cols-3 gap-4 sm:gap-5">
+              {topReviews.map((r) => (
+                <Card key={r.id}>
+                  <CardContent className="p-5 sm:p-6">
+                    <Stars value={r.rating} />
+                    <p className="mt-3 text-sm sm:text-base text-foreground/90 leading-relaxed italic line-clamp-5">
+                      &ldquo;{r.comment}&rdquo;
+                    </p>
+                    <div className="mt-4 pt-3 border-t text-sm">
+                      <span className="font-medium">{r.authorName}</span>
+                      {r.serviceName && (
+                        <span className="text-xs text-muted-foreground block mt-0.5">{r.serviceName}</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="text-center mt-8">
+              <Button asChild variant="outline">
+                <Link href="/resenas">Ver todas las reseñas →</Link>
+              </Button>
+            </div>
           </div>
         </section>
       )}

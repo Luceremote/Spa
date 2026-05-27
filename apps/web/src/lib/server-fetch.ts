@@ -111,3 +111,18 @@ export async function fetchPhotos(): Promise<any[]> {
     return [];
   }
 }
+
+export async function fetchReviews(opts: { featured?: boolean; limit?: number } = {}): Promise<any[]> {
+  try {
+    const q = new URLSearchParams();
+    if (opts.featured) q.set("featured", "true");
+    if (opts.limit) q.set("limit", String(opts.limit));
+    const url = `${API_URL}/reviews${q.toString() ? "?" + q.toString() : ""}`;
+    const res = await fetch(url, { next: { revalidate: 30 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.reviews ?? [];
+  } catch {
+    return [];
+  }
+}

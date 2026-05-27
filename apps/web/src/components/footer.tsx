@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MapPin, Clock, Mail, Phone, MessageCircle, Instagram, Facebook, Twitter, Youtube } from "lucide-react";
+import { NewsletterForm } from "@/components/newsletter";
 import type { SiteConfig } from "@/lib/types";
 
 interface Props {
@@ -32,6 +33,19 @@ export function Footer({ config }: Props) {
 
   return (
     <footer className="border-t bg-muted/40 mt-16">
+      {/* Newsletter banner */}
+      <div className="border-b bg-primary/5">
+        <div className="container py-8 sm:py-10 grid md:grid-cols-2 gap-4 items-center">
+          <div>
+            <h3 className="text-lg sm:text-xl font-bold mb-1">Recibe nuestras promos</h3>
+            <p className="text-sm text-muted-foreground">
+              Suscríbete para enterarte primero de descuentos y novedades.
+            </p>
+          </div>
+          <NewsletterForm />
+        </div>
+      </div>
+
       <div className="container py-10 sm:py-12 grid gap-8 md:grid-cols-3">
         {/* Identidad + redes */}
         <div>

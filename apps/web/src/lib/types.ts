@@ -187,6 +187,27 @@ export interface Photo {
   createdAt: string;
 }
 
+export interface Review {
+  id: string;
+  authorName: string;
+  authorEmail?: string | null;
+  rating: number;
+  comment: string;
+  serviceName: string | null;
+  published?: boolean;
+  featured: boolean;
+  createdAt: string;
+}
+
+export interface Subscriber {
+  id: string;
+  email: string;
+  name: string | null;
+  source: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   email: string;

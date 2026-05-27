@@ -159,7 +159,8 @@ model Booking {
   coupon          Coupon?   @relation(fields: [couponId], references: [id], onDelete: SetNull)
   redemptions     GiftCardRedemption[]
   notes       String?
-  reminderSentAt  DateTime? // marca cuando se mandó el recordatorio
+  reminderSentAt        DateTime? // push reminder (~1h antes)
+  emailReminderSentAt   DateTime? // email reminder (~24h antes)
   payment     Payment?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -286,6 +287,35 @@ model SiteConfig {
   privacyPolicy      String?
   termsOfService     String?
   updatedAt     DateTime @updatedAt
+}
+
+// Reseñas / testimonios de clientes
+model Review {
+  id           String   @id @default(cuid())
+  authorName   String
+  authorEmail  String?  // opcional, no se muestra públicamente
+  rating       Int      // 1-5 estrellas
+  comment      String
+  serviceName  String?  // qué servicio le dio (texto libre)
+  published    Boolean  @default(false) // admin debe aprobar antes de mostrar
+  featured     Boolean  @default(false) // destacada (aparece en landing)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([published, featured, createdAt])
+}
+
+// Suscriptores al newsletter / promos
+model Subscriber {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  source      String?  // "footer", "checkout", etc
+  active      Boolean  @default(true)
+  unsubscribedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([active])
 }
 
 // Fotos de la galería pública del spa

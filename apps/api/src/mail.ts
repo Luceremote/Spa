@@ -96,6 +96,22 @@ export function bookingConfirmationEmail(d: BookingMailData): { subject: string;
   };
 }
 
+export function bookingReminderEmail(d: BookingMailData): { subject: string; html: string } {
+  return {
+    subject: `Recordatorio: tu cita mañana en ${d.spaName}`,
+    html: `<div style="${BOX}">
+      <h2 style="color:#d63384;margin:0 0 12px">¡Te esperamos mañana!</h2>
+      <p>Hola <strong>${esc(d.customerName)}</strong>, te recordamos tu cita reservada:</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#fafafa;border-radius:8px">
+        <tr><td style="padding:10px 14px;color:#666">Servicio</td><td style="padding:10px 14px"><strong>${esc(d.serviceName)}</strong></td></tr>
+        <tr><td style="padding:10px 14px;color:#666">Cuándo</td><td style="padding:10px 14px"><strong>${esc(fmtDate(d.startAtISO))}</strong></td></tr>
+      </table>
+      <p style="color:#666;font-size:14px">Si necesitas cancelar o reprogramar, contáctanos lo antes posible.</p>
+      <p style="color:#999;font-size:12px;text-align:center;margin-top:20px">${esc(d.spaName)}</p>
+    </div>`,
+  };
+}
+
 export function bookingPaidEmail(d: BookingMailData): { subject: string; html: string } {
   return {
     subject: `Pago confirmado — ${d.spaName}`,

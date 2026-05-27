@@ -26,6 +26,8 @@ import { exportRouter } from "./routes/export.js";
 import { pushRouter } from "./routes/push.js";
 import { giftCardsRouter } from "./routes/giftcards.js";
 import { photosRouter } from "./routes/photos.js";
+import { reviewsRouter } from "./routes/reviews.js";
+import { subscribersRouter } from "./routes/subscribers.js";
 import { startCron } from "./cron.js";
 
 const app = express();
@@ -148,6 +150,8 @@ app.use("/api/export", exportRouter);
 app.use("/api/push", pushRouter);
 app.use("/api/gift-cards", giftCardsRouter);
 app.use("/api/photos", photosRouter);
+app.use("/api/reviews", reviewsRouter);
+app.use("/api/subscribers", subscribersRouter);
 
 app.use("/uploads", uploadsStatic);
 

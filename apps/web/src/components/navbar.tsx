@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/servicios", label: "Servicios" },
   { href: "/sobre", label: "Sobre" },
   { href: "/galeria", label: "Galería" },
+  { href: "/resenas", label: "Reseñas" },
   { href: "/gift-cards", label: "Gift Cards" },
   { href: "/mis-reservas", label: "Mis reservas" },
   { href: "/contacto", label: "Contacto" },
