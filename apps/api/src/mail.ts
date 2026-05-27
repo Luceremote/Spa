@@ -13,20 +13,26 @@ interface SendArgs {
 
 export async function sendMail(args: SendArgs): Promise<void> {
   if (!resend || !env.MAIL_FROM) {
-    console.log("[mail:noop]", args.subject, "→", args.to);
+    console.log("[mail:noop] (resend/mail_from sin configurar)", args.subject, "→", args.to);
     return;
   }
   try {
-    await resend.emails.send({
+    // Resend SDK v4: NO arroja en error, retorna { data, error }
+    const result = await resend.emails.send({
       from: env.MAIL_FROM,
       to: args.to,
       subject: args.subject,
       html: args.html,
       replyTo: args.replyTo,
     });
+    if (result.error) {
+      console.error("[mail] Resend rechazó:", JSON.stringify(result.error), "subject=", args.subject, "to=", args.to);
+    } else {
+      console.log("[mail] enviado id=", result.data?.id, "to=", args.to, "subject=", args.subject);
+    }
   } catch (e) {
     // Nunca dejes que un fallo de email tumbe la transacción de negocio
-    console.error("[mail] error enviando:", e);
+    console.error("[mail] excepción enviando:", e);
   }
 }
 
