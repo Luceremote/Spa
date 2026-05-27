@@ -11,6 +11,7 @@ const DEFAULT_THEME: Theme = {
   colorBackground: "30 40% 98%",
   colorForeground: "220 15% 20%",
   colorMuted: "30 20% 92%",
+  colorHeader: "30 40% 98%",
   borderRadius: "0.75rem",
   cardPadding: "1.5rem",
   containerWidth: "1200px",

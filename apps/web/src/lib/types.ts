@@ -133,6 +133,7 @@ export interface Theme {
   colorBackground: string;
   colorForeground: string;
   colorMuted: string;
+  colorHeader: string;
   borderRadius: string;
   cardPadding: string;
   containerWidth: string;

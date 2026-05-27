@@ -142,6 +142,7 @@ export default function PersonalizacionPage() {
     root.style.setProperty("--secondary", theme.colorSecondary);
     root.style.setProperty("--accent", theme.colorAccent);
     root.style.setProperty("--muted", theme.colorMuted);
+    root.style.setProperty("--header", (theme as any).colorHeader || theme.colorBackground);
     root.style.setProperty("--card", theme.colorBackground);
     root.style.setProperty("--border", theme.colorMuted);
     root.style.setProperty("--input", theme.colorMuted);
@@ -170,7 +171,8 @@ export default function PersonalizacionPage() {
   }
 
   function applyPalette(p: Partial<Theme>) {
-    setTheme((t) => (t ? { ...t, ...p } : t));
+    // El header sigue al fondo de la paleta para mantener coherencia visual
+    setTheme((t) => (t ? { ...t, ...p, colorHeader: p.colorBackground ?? (t as any).colorHeader } : t));
   }
 
   if (!theme) {
@@ -245,6 +247,7 @@ export default function PersonalizacionPage() {
           <ColorRow label="Secundario" value={theme.colorSecondary} onChange={(v) => update("colorSecondary", v)} />
           <ColorRow label="Acento" value={theme.colorAccent} onChange={(v) => update("colorAccent", v)} />
           <ColorRow label="Fondo" value={theme.colorBackground} onChange={(v) => update("colorBackground", v)} />
+          <ColorRow label="Barra superior (menú)" value={(theme as any).colorHeader ?? theme.colorBackground} onChange={(v) => update("colorHeader" as any, v)} />
           <ColorRow label="Texto" value={theme.colorForeground} onChange={(v) => update("colorForeground", v)} />
           <ColorRow label="Apagado" value={theme.colorMuted} onChange={(v) => update("colorMuted", v)} />
         </CardContent>

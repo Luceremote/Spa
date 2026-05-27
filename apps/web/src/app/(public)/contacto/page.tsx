@@ -35,12 +35,18 @@ export default async function ContactoPage() {
   const config = await fetchSiteConfig();
   const waUrl = `https://wa.me/${config.whatsappPhone}?text=${encodeURIComponent(config.whatsappMsg)}`;
 
-  // Si hay address pero no googleMapsUrl, usamos un search default
-  const mapEmbed =
-    config.googleMapsUrl ??
-    (config.address
-      ? `https://www.google.com/maps?q=${encodeURIComponent(config.address)}&output=embed`
-      : null);
+  // Google bloquea en iframe las URLs normales de Maps (X-Frame-Options).
+  // Solo funcionan las de "embed". Si el admin pegó una URL de embed válida la usamos;
+  // de lo contrario generamos un embed a partir de la dirección (no requiere API key ni se bloquea).
+  const isEmbedUrl =
+    !!config.googleMapsUrl &&
+    (config.googleMapsUrl.includes("output=embed") ||
+      config.googleMapsUrl.includes("/maps/embed"));
+  const mapEmbed = isEmbedUrl
+    ? config.googleMapsUrl
+    : config.address
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(config.address)}&z=16&output=embed`
+    : null;
 
   return (
     <div className="container py-8 sm:py-12 max-w-5xl">

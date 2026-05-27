@@ -29,6 +29,7 @@ const themeSchema = z.object({
   colorBackground: z.string().optional(),
   colorForeground: z.string().optional(),
   colorMuted: z.string().optional(),
+  colorHeader: z.string().optional(),
   borderRadius: z.string().optional(),
   cardPadding: z.string().optional(),
   containerWidth: z.string().optional(),

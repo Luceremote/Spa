@@ -27,6 +27,7 @@ export function ThemeProvider({ theme, config, children }: Props) {
     root.style.setProperty("--secondary", theme.colorSecondary);
     root.style.setProperty("--accent", theme.colorAccent);
     root.style.setProperty("--muted", theme.colorMuted);
+    root.style.setProperty("--header", theme.colorHeader || theme.colorBackground);
     root.style.setProperty("--card", theme.colorBackground);
     root.style.setProperty("--card-foreground", theme.colorForeground);
     root.style.setProperty("--primary-foreground", "0 0% 100%");

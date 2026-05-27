@@ -26,7 +26,7 @@ export default async function SobrePage() {
             style={{ backgroundImage: `url('${config.aboutImageUrl}')` }}
           />
         )}
-        <div className={config.aboutImageUrl ? "" : "md:col-span-2"}>
+        <div className={config.aboutImageUrl ? "" : "md:col-span-2 text-center max-w-2xl mx-auto"}>
           {config.aboutText ? (
             <div className="prose prose-lg max-w-none">
               {config.aboutText.split("\n").map((p, i) =>
@@ -42,7 +42,11 @@ export default async function SobrePage() {
               {config.tagline}
             </p>
           )}
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div
+            className={`mt-8 flex flex-wrap gap-3 ${
+              config.aboutImageUrl ? "" : "justify-center"
+            }`}
+          >
             <Button asChild size="lg">
               <Link href="/reservar">Reserva tu cita</Link>
             </Button>

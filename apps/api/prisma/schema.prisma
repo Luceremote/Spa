@@ -339,6 +339,7 @@ model Theme {
   colorBackground String   @default("30 40% 98%")
   colorForeground String   @default("220 15% 20%")
   colorMuted      String   @default("30 20% 92%")
+  colorHeader     String   @default("30 40% 98%")   // color de la barra superior (navbar)
   borderRadius    String   @default("0.75rem")
   cardPadding     String   @default("1.5rem")
   containerWidth  String   @default("1200px")
