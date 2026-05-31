@@ -209,6 +209,53 @@ export interface Subscriber {
   createdAt: string;
 }
 
+// ───────── Finanzas ─────────
+export type TxType = "INCOME" | "EXPENSE";
+export type TxSource = "MANUAL" | "BOOKING" | "GIFT_CARD" | "RECURRING" | "REFUND";
+export type RecurFrequency = "WEEKLY" | "MONTHLY" | "YEARLY";
+
+export interface FinanceCategory {
+  id: string;
+  name: string;
+  type: TxType;
+  color: string | null;
+  icon: string | null;
+  isDefault: boolean;
+  _count?: { transactions: number };
+}
+
+export interface Transaction {
+  id: string;
+  type: TxType;
+  source: TxSource;
+  amountCents: number;
+  date: string;
+  description: string | null;
+  note: string | null;
+  categoryId: string | null;
+  category?: FinanceCategory | null;
+  bookingId: string | null;
+  giftCardId: string | null;
+  receiptUrl: string | null;
+  createdAt: string;
+}
+
+export interface RecurringTransaction {
+  id: string;
+  name: string;
+  amountCents: number;
+  type: TxType;
+  categoryId: string | null;
+  category?: FinanceCategory | null;
+  frequency: RecurFrequency;
+  dayOfMonth: number | null;
+  monthOfYear: number | null;
+  weekday: number | null;
+  active: boolean;
+  nextDueDate: string;
+  lastRunAt: string | null;
+}
+
 export interface User {
   id: string;
   email: string;

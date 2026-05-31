@@ -4,6 +4,7 @@ import { prisma } from "./db.js";
 import { env } from "./env.js";
 import { sendPush } from "./push.js";
 import { sendMail, bookingReminderEmail } from "./mail.js";
+import { processRecurringTransactions } from "./finances-helpers.js";
 
 let started = false;
 
@@ -100,6 +101,16 @@ export function startCron() {
       }
     } catch (e) {
       console.error("[cron] error email recordatorios:", e);
+    }
+  });
+
+  // ─── Diario 6am: procesar transacciones financieras recurrentes ──
+  cron.schedule("0 6 * * *", async () => {
+    try {
+      const n = await processRecurringTransactions();
+      if (n > 0) console.log(`[cron] ${n} recurring transaction(s) created`);
+    } catch (e) {
+      console.error("[cron] error procesando recurrentes:", e);
     }
   });
 

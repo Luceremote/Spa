@@ -7,6 +7,7 @@ import { HttpError } from "../middleware/error.js";
 import { logSecurityEvent } from "../security/events.js";
 import { sendMail, bookingPaidEmail } from "../mail.js";
 import { activateGiftCard } from "./giftcards.js";
+import { recordBookingIncome, recordRefund } from "../finances-helpers.js";
 
 export const paymentsRouter = Router();
 
@@ -192,6 +193,9 @@ export const stripeWebhookHandler = [
           });
           sendMail({ to: fullBooking.customer.email, ...m });
         }
+
+        // Registrar ingreso en finanzas (best-effort)
+        recordBookingIncome(bookingId).catch(() => {});
       } else if (
         event.type === "checkout.session.expired" ||
         event.type === "checkout.session.async_payment_failed"
@@ -212,6 +216,7 @@ export const stripeWebhookHandler = [
             where: { stripePaymentIntentId: pi },
             data: { status: "REFUNDED" },
           });
+          recordRefund(pi).catch(() => {});
         }
       }
       res.json({ received: true });

@@ -171,10 +171,38 @@ async function main() {
     });
   }
 
+  // Categorías financieras por defecto
+  const financeCats: { name: string; type: "INCOME" | "EXPENSE"; color: string; icon: string }[] = [
+    // Ingresos
+    { name: "Servicios", type: "INCOME", color: "#10b981", icon: "sparkles" },
+    { name: "Gift Cards", type: "INCOME", color: "#8b5cf6", icon: "gift" },
+    { name: "Productos", type: "INCOME", color: "#06b6d4", icon: "shopping-bag" },
+    { name: "Otros ingresos", type: "INCOME", color: "#3b82f6", icon: "trending-up" },
+    // Gastos
+    { name: "Arriendo/Renta", type: "EXPENSE", color: "#ef4444", icon: "home" },
+    { name: "Servicios públicos", type: "EXPENSE", color: "#f59e0b", icon: "zap" },
+    { name: "Productos spa", type: "EXPENSE", color: "#ec4899", icon: "package" },
+    { name: "Personal/Salarios", type: "EXPENSE", color: "#84cc16", icon: "users" },
+    { name: "Marketing", type: "EXPENSE", color: "#a855f7", icon: "megaphone" },
+    { name: "Equipos", type: "EXPENSE", color: "#0ea5e9", icon: "wrench" },
+    { name: "Hogar", type: "EXPENSE", color: "#f97316", icon: "house" },
+    { name: "Impuestos", type: "EXPENSE", color: "#dc2626", icon: "file-text" },
+    { name: "Reembolsos", type: "EXPENSE", color: "#6b7280", icon: "rotate-ccw" },
+    { name: "Otros gastos", type: "EXPENSE", color: "#9ca3af", icon: "more-horizontal" },
+  ];
+  for (const c of financeCats) {
+    await prisma.financeCategory.upsert({
+      where: { name_type: { name: c.name, type: c.type } },
+      update: {},
+      create: { ...c, isDefault: true },
+    });
+  }
+
   console.log("Seed completado.");
   console.log("Admin: admin@spa.local / admin123");
   console.log("Cupón demo: WELCOME10 (10% off)");
   console.log("Staff demo: Sara López");
+  console.log(`Finanzas: ${financeCats.length} categorías default`);
 }
 
 main()

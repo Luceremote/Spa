@@ -8,6 +8,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { sanitizeText, normalizeEmail } from "../security/sanitize.js";
 import { sendMail, giftCardEmail, giftCardReceiptEmail } from "../mail.js";
+import { recordGiftCardIncome } from "../finances-helpers.js";
 
 export const giftCardsRouter = Router();
 
@@ -179,6 +180,9 @@ export async function activateGiftCard(
   if (card.purchaserEmail !== mailData.recipientEmail) {
     sendMail({ to: card.purchaserEmail, ...giftCardReceiptEmail(mailData) });
   }
+
+  // Registrar como ingreso en finanzas (best-effort, idempotente)
+  recordGiftCardIncome(giftCardId).catch(() => {});
 }
 
 // ─── Admin: listar ──────────────────────────────────────────

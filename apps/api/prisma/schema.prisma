@@ -45,6 +45,25 @@ enum CouponType {
   FIXED       // descuento de monto fijo (centavos)
 }
 
+enum TxType {
+  INCOME
+  EXPENSE
+}
+
+enum TxSource {
+  MANUAL
+  BOOKING
+  GIFT_CARD
+  RECURRING
+  REFUND
+}
+
+enum RecurFrequency {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
 enum GiftCardStatus {
   PENDING_PAYMENT  // creada, esperando que Stripe confirme el pago
   ACTIVE           // pagada, con saldo disponible
@@ -360,6 +379,64 @@ model PushToken {
   updatedAt  DateTime @updatedAt
 
   @@index([customerId])
+}
+
+// ─── FINANZAS / CARTERA ───────────────────────────────────
+model FinanceCategory {
+  id             String   @id @default(cuid())
+  name           String
+  type           TxType
+  color          String?  // hex para gráficas (#xxxxxx)
+  icon           String?  // ej: "home", "shopping-cart"
+  isDefault      Boolean  @default(false)
+  transactions   Transaction[]
+  recurrings     RecurringTransaction[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([name, type])
+}
+
+model Transaction {
+  id          String           @id @default(cuid())
+  type        TxType
+  source      TxSource         @default(MANUAL)
+  amountCents Int              // siempre positivo; el "type" determina signo
+  date        DateTime         // fecha contable (puede ser distinta del createdAt)
+  description String?
+  note        String?
+  categoryId  String?
+  category    FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  bookingId   String?          // si vino de una reserva
+  giftCardId  String?          // si vino de una gift card
+  receiptUrl  String?          // foto/PDF de factura/recibo
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([type, date])
+  @@index([categoryId])
+  @@index([bookingId])
+  @@index([giftCardId])
+}
+
+model RecurringTransaction {
+  id           String           @id @default(cuid())
+  name         String           // ej. "Arriendo local"
+  amountCents  Int
+  type         TxType
+  categoryId   String?
+  category     FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  frequency    RecurFrequency   @default(MONTHLY)
+  dayOfMonth   Int?             // 1-31 para MONTHLY/YEARLY
+  monthOfYear  Int?             // 1-12 para YEARLY
+  weekday      Int?             // 0-6 para WEEKLY
+  active       Boolean          @default(true)
+  nextDueDate  DateTime         // cuándo se genera la próxima Transaction
+  lastRunAt    DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([active, nextDueDate])
 }
 
 model SecurityEvent {
