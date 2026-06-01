@@ -113,6 +113,62 @@ export interface CommissionSummary {
   count: number;
 }
 
+// ─── Marketing ─────
+export interface PromoBanner {
+  id: string;
+  active: boolean;
+  text: string;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  bgColor: string;
+  textColor: string;
+  dismissible: boolean;
+}
+
+export interface PromoPopup {
+  id: string;
+  active: boolean;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  imageUrl: string | null;
+  showAfterSec: number;
+  showOncePerDays: number;
+}
+
+export type CampaignStatus = "DRAFT" | "SENDING" | "SENT" | "FAILED";
+
+export interface EmailCampaign {
+  id: string;
+  subject: string;
+  htmlBody: string;
+  preheader: string | null;
+  status: CampaignStatus;
+  sentAt: string | null;
+  recipientCount: number;
+  successCount: number;
+  failedCount: number;
+  createdAt: string;
+}
+
+export interface LoyaltySettings {
+  id: string;
+  active: boolean;
+  pointsPerDollar: number;
+  pointValueCents: number;
+  minRedeemPoints: number;
+}
+
+export interface LoyaltyAccount {
+  id: string;
+  customerId: string;
+  customer?: { id: string; name: string; phone: string; email: string | null };
+  pointsBalance: number;
+  totalEarned: number;
+  totalRedeemed: number;
+}
+
 export interface Coupon {
   id: string;
   code: string;

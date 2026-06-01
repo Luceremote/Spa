@@ -101,6 +101,7 @@ model Customer {
   privateNotes String? // notas privadas del admin (no visibles al cliente)
   bookings  Booking[]
   pushTokens PushToken[]
+  loyaltyAccount LoyaltyAccount?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -216,6 +217,101 @@ enum ProductMovementType {
   IN          // entrada (compra, devolución de proveedor)
   OUT         // salida (uso interno, venta)
   ADJUSTMENT  // ajuste manual (inventario físico)
+}
+
+// ─── MARKETING ────────────────────────────────────────────
+enum CampaignStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+}
+
+// Campaña de email a suscriptores (broadcast)
+model EmailCampaign {
+  id           String         @id @default(cuid())
+  subject      String
+  htmlBody     String         // HTML completo del email
+  preheader    String?        // preview text
+  status       CampaignStatus @default(DRAFT)
+  sentAt       DateTime?
+  recipientCount Int          @default(0)
+  successCount   Int          @default(0)
+  failedCount    Int          @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+// Banner promocional configurable en home (singleton)
+model PromoBanner {
+  id          String   @id @default("singleton")
+  active      Boolean  @default(false)
+  text        String   @default("")        // texto del banner
+  ctaLabel    String?  // ej. "Reservar"
+  ctaUrl      String?  // ej. "/reservar"
+  bgColor     String   @default("340 75% 55%")   // HSL
+  textColor   String   @default("0 0% 100%")
+  dismissible Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+// Pop-up de descuento para visitantes nuevos (singleton)
+model PromoPopup {
+  id          String   @id @default("singleton")
+  active      Boolean  @default(false)
+  title       String   @default("¡Bienvenido!")
+  body        String   @default("10% de descuento en tu primera reserva")
+  ctaLabel    String   @default("Quiero el descuento")
+  ctaUrl      String   @default("/reservar")
+  imageUrl    String?
+  showAfterSec Int     @default(5)         // segundos antes de mostrar
+  showOncePerDays Int  @default(7)         // no repetir antes de N días
+  updatedAt   DateTime @updatedAt
+}
+
+// Programa de lealtad: puntos acumulables y canjeables
+model LoyaltyAccount {
+  id          String              @id @default(cuid())
+  customerId  String              @unique
+  customer    Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  pointsBalance Int               @default(0)
+  totalEarned Int                 @default(0)
+  totalRedeemed Int               @default(0)
+  movements   LoyaltyMovement[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([pointsBalance])
+}
+
+enum LoyaltyMovementType {
+  EARN
+  REDEEM
+  ADJUSTMENT
+  EXPIRE
+}
+
+model LoyaltyMovement {
+  id         String              @id @default(cuid())
+  accountId  String
+  account    LoyaltyAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type       LoyaltyMovementType
+  points     Int                 // positivo siempre; type indica signo
+  bookingId  String?             // si fue por una reserva
+  note       String?
+  createdAt  DateTime            @default(now())
+
+  @@index([accountId, createdAt])
+}
+
+// Reglas globales del programa (singleton)
+model LoyaltySettings {
+  id              String   @id @default("singleton")
+  active          Boolean  @default(false)
+  pointsPerDollar Float    @default(1.0)    // 1 punto por cada $1 gastado
+  pointValueCents Int      @default(1)      // 1 punto = $0.01 al canjear
+  minRedeemPoints Int      @default(500)    // mínimo para canjear
+  updatedAt       DateTime @updatedAt
 }
 
 model Booking {

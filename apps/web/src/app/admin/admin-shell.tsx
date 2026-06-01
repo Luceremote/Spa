@@ -26,6 +26,10 @@ import {
   Package,
   Percent,
   UserX,
+  Megaphone,
+  BellRing,
+  Send,
+  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, getToken, setToken } from "@/lib/api";
@@ -47,6 +51,10 @@ const NAV = [
   { href: "/admin/galeria", label: "Galería", icon: Camera },
   { href: "/admin/resenas", label: "Reseñas", icon: Star },
   { href: "/admin/suscriptores", label: "Newsletter", icon: Mail },
+  { href: "/admin/marketing/banner", label: "Banner promo", icon: Megaphone },
+  { href: "/admin/marketing/popup", label: "Pop-up promo", icon: BellRing },
+  { href: "/admin/marketing/campanas", label: "Campañas email", icon: Send },
+  { href: "/admin/marketing/lealtad", label: "Programa lealtad", icon: Award },
   { href: "/admin/cierres", label: "Días cerrados", icon: CalendarX },
   { href: "/admin/personalizacion", label: "Personalización", icon: Palette },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },

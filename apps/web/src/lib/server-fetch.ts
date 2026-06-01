@@ -113,6 +113,28 @@ export async function fetchPhotos(): Promise<any[]> {
   }
 }
 
+export async function fetchBanner(): Promise<any | null> {
+  try {
+    const res = await fetch(`${API_URL}/marketing/banner`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.banner ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPopup(): Promise<any | null> {
+  try {
+    const res = await fetch(`${API_URL}/marketing/popup`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.popup ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchReviews(opts: { featured?: boolean; limit?: number } = {}): Promise<any[]> {
   try {
     const q = new URLSearchParams();

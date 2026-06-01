@@ -8,6 +8,7 @@ import { logSecurityEvent } from "../security/events.js";
 import { sendMail, bookingPaidEmail } from "../mail.js";
 import { activateGiftCard } from "./giftcards.js";
 import { recordBookingIncome, recordRefund } from "../finances-helpers.js";
+import { earnPointsFromBooking } from "../loyalty-helpers.js";
 
 export const paymentsRouter = Router();
 
@@ -194,8 +195,9 @@ export const stripeWebhookHandler = [
           sendMail({ to: fullBooking.customer.email, ...m });
         }
 
-        // Registrar ingreso en finanzas (best-effort)
+        // Registrar ingreso en finanzas + acreditar puntos de lealtad (best-effort)
         recordBookingIncome(bookingId).catch(() => {});
+        earnPointsFromBooking(bookingId).catch(() => {});
       } else if (
         event.type === "checkout.session.expired" ||
         event.type === "checkout.session.async_payment_failed"
