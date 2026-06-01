@@ -102,6 +102,8 @@ model Customer {
   bookings  Booking[]
   pushTokens PushToken[]
   loyaltyAccount LoyaltyAccount?
+  packagePurchases PackagePurchase[] @relation("CustomerPackages")
+  membership CustomerMembership? @relation("CustomerMembership")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -134,6 +136,7 @@ model Service {
   category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   staff           Staff[]   @relation("StaffServices")
   bookings        Booking[]
+  packages        ServicePackage[] @relation("ServicePackages")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -331,6 +334,7 @@ model Booking {
   couponId        String?
   coupon          Coupon?   @relation(fields: [couponId], references: [id], onDelete: SetNull)
   redemptions     GiftCardRedemption[]
+  packageRedemption PackageRedemption?
   notes       String?
   reminderSentAt        DateTime? // push reminder (~1h antes)
   emailReminderSentAt   DateTime? // email reminder (~24h antes)
@@ -459,6 +463,8 @@ model SiteConfig {
   cancellationPolicy String?
   privacyPolicy      String?
   termsOfService     String?
+  // Activa métodos de pago "Compra ahora, paga después" en Stripe Checkout (Klarna/Afterpay/Affirm)
+  enableBnpl    Boolean  @default(false)
   updatedAt     DateTime @updatedAt
 }
 
@@ -591,6 +597,98 @@ model RecurringTransaction {
   updatedAt    DateTime         @updatedAt
 
   @@index([active, nextDueDate])
+}
+
+// ─── VENTAS / PAQUETES / MEMBRESÍAS ───────────────────────
+enum PackagePurchaseStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  USED_UP
+  CANCELLED
+}
+
+// Paquete de N sesiones de un servicio a precio reducido
+model ServicePackage {
+  id            String   @id @default(cuid())
+  serviceId     String
+  service       Service  @relation("ServicePackages", fields: [serviceId], references: [id], onDelete: Cascade)
+  name          String
+  sessions      Int      // cantidad de sesiones incluidas
+  priceCents    Int      // precio total del paquete
+  validityDays  Int      @default(365) // días desde la compra hasta que expira
+  active        Boolean  @default(true)
+  purchases     PackagePurchase[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([serviceId, active])
+}
+
+// Compra concreta de un paquete por un cliente (lleva el saldo de sesiones)
+model PackagePurchase {
+  id                String                @id @default(cuid())
+  packageId         String
+  package           ServicePackage        @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  customerId        String
+  customer          Customer              @relation("CustomerPackages", fields: [customerId], references: [id], onDelete: Cascade)
+  sessionsTotal     Int                   // copia del paquete (por si cambia después)
+  sessionsRemaining Int
+  status            PackagePurchaseStatus @default(PENDING_PAYMENT)
+  paidCents         Int
+  expiresAt         DateTime
+  stripeSessionId       String? @unique
+  stripePaymentIntentId String? @unique
+  paidAt                DateTime?
+  redemptions       PackageRedemption[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([customerId, status])
+  @@index([status])
+}
+
+model PackageRedemption {
+  id         String          @id @default(cuid())
+  purchaseId String
+  purchase   PackagePurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  bookingId  String          @unique
+  booking    Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+
+  @@index([purchaseId])
+}
+
+// Tier de membresía: configuración (singletons por nombre)
+model MembershipTier {
+  id              String   @id @default(cuid())
+  name            String   @unique         // ej. "Bronce", "Plata", "Oro"
+  description     String?
+  monthlyPriceCents Int                    // precio referencial mensual
+  discountPercent Float                    // descuento que aplica en cada reserva (0-100)
+  perks           String?                  // texto libre con beneficios
+  color           String?                  // hex para badge
+  active          Boolean  @default(true)
+  memberships     CustomerMembership[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Membresía actual de un cliente (gestión manual; no Stripe Subscriptions todavía)
+model CustomerMembership {
+  id          String         @id @default(cuid())
+  customerId  String         @unique
+  customer    Customer       @relation("CustomerMembership", fields: [customerId], references: [id], onDelete: Cascade)
+  tierId      String
+  tier        MembershipTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  startedAt   DateTime       @default(now())
+  expiresAt   DateTime?      // null = no expira (manual)
+  active      Boolean        @default(true)
+  note        String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([active, expiresAt])
 }
 
 model SecurityEvent {

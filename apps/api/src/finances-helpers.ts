@@ -10,6 +10,36 @@ async function findOrCreateCategory(name: string, type: "INCOME" | "EXPENSE") {
   return cat;
 }
 
+// Helper genérico: inserta una Transaction asegurando que la categoría exista
+export async function recordTransaction(args: {
+  type: "INCOME" | "EXPENSE";
+  source: "MANUAL" | "BOOKING" | "GIFT_CARD" | "RECURRING" | "REFUND";
+  amountCents: number;
+  date?: Date;
+  description?: string;
+  categoryName?: string;
+  bookingId?: string;
+  giftCardId?: string;
+}): Promise<void> {
+  let categoryId: string | undefined;
+  if (args.categoryName) {
+    const cat = await findOrCreateCategory(args.categoryName, args.type);
+    categoryId = cat.id;
+  }
+  await prisma.transaction.create({
+    data: {
+      type: args.type,
+      source: args.source,
+      amountCents: args.amountCents,
+      date: args.date ?? new Date(),
+      description: args.description ?? null,
+      categoryId: categoryId ?? null,
+      bookingId: args.bookingId ?? null,
+      giftCardId: args.giftCardId ?? null,
+    },
+  });
+}
+
 // Llamar cuando una reserva queda PAID via webhook
 export async function recordBookingIncome(bookingId: string): Promise<void> {
   try {

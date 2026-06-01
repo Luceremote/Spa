@@ -405,6 +405,29 @@ export default function ConfiguracionPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pagos diferidos (BNPL)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <label className="flex items-start gap-3 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={config.enableBnpl ?? false}
+              onChange={(e) => update("enableBnpl", e.target.checked)}
+            />
+            <span>
+              <span className="font-medium block">Habilitar Klarna, Affirm y Afterpay</span>
+              <span className="text-xs text-muted-foreground">
+                Los clientes podrán pagar a plazos en el checkout de Stripe. Requiere activación
+                previa en tu cuenta de Stripe.
+              </span>
+            </span>
+          </label>
+        </CardContent>
+      </Card>
     </div>
   );
 }

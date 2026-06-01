@@ -30,6 +30,8 @@ import {
   BellRing,
   Send,
   Award,
+  Tag,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, getToken, setToken } from "@/lib/api";
@@ -48,6 +50,8 @@ const NAV = [
   { href: "/admin/inventario", label: "Inventario", icon: Package },
   { href: "/admin/finanzas", label: "Finanzas", icon: Wallet },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
+  { href: "/admin/paquetes", label: "Paquetes", icon: Tag },
+  { href: "/admin/membresias", label: "Membresías", icon: Crown },
   { href: "/admin/galeria", label: "Galería", icon: Camera },
   { href: "/admin/resenas", label: "Reseñas", icon: Star },
   { href: "/admin/suscriptores", label: "Newsletter", icon: Mail },

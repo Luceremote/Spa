@@ -7,6 +7,7 @@ import { HttpError } from "../middleware/error.js";
 import { logSecurityEvent } from "../security/events.js";
 import { sendMail, bookingPaidEmail } from "../mail.js";
 import { activateGiftCard } from "./giftcards.js";
+import { activatePackagePurchase } from "./packages.js";
 import { recordBookingIncome, recordRefund } from "../finances-helpers.js";
 import { earnPointsFromBooking } from "../loyalty-helpers.js";
 
@@ -37,9 +38,15 @@ paymentsRouter.post("/checkout", async (req, res, next) => {
       throw new HttpError(400, "La reserva ya pasó");
     }
 
+    const cfg = await prisma.siteConfig.findUnique({ where: { id: "singleton" } });
+    const paymentMethods: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] = ["card"];
+    if (cfg?.enableBnpl) {
+      paymentMethods.push("klarna", "affirm", "afterpay_clearpay");
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      payment_method_types: paymentMethods,
       customer_email: booking.customer.email ?? undefined,
       // Anti-fraud: hint del cliente
       payment_intent_data: {
@@ -120,6 +127,18 @@ export const stripeWebhookHandler = [
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
         const type = session.metadata?.type;
+
+        // Compra de paquete (sesiones múltiples)
+        if (type === "package") {
+          const purchaseId = session.metadata?.purchaseId;
+          if (!purchaseId) return res.status(400).send("metadata.purchaseId requerido");
+          const pi = typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id ?? undefined;
+          await activatePackagePurchase(purchaseId, pi);
+          await logSecurityEvent({ type: "WEBHOOK_OK", req, meta: { event: event.type, purchaseId } });
+          return res.json({ received: true, kind: "package" });
+        }
 
         // Gift card compras
         if (type === "gift_card") {

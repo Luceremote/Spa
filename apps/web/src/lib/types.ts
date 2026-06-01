@@ -169,6 +169,65 @@ export interface LoyaltyAccount {
   totalRedeemed: number;
 }
 
+// ─── Sales ─────
+export type PackagePurchaseStatus =
+  | "PENDING_PAYMENT"
+  | "ACTIVE"
+  | "EXPIRED"
+  | "USED_UP"
+  | "CANCELLED";
+
+export interface ServicePackage {
+  id: string;
+  serviceId: string;
+  service?: { id: string; name: string; slug?: string; durationMinutes?: number };
+  name: string;
+  sessions: number;
+  priceCents: number;
+  validityDays: number;
+  active: boolean;
+  _count?: { purchases: number };
+}
+
+export interface PackagePurchase {
+  id: string;
+  packageId: string;
+  package?: { id: string; name: string; service?: { id: string; name: string } };
+  customerId: string;
+  customer?: { id: string; name: string; phone: string; email: string | null };
+  sessionsTotal: number;
+  sessionsRemaining: number;
+  status: PackagePurchaseStatus;
+  paidCents: number;
+  expiresAt: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface MembershipTier {
+  id: string;
+  name: string;
+  description: string | null;
+  monthlyPriceCents: number;
+  discountPercent: number;
+  perks: string | null;
+  color: string | null;
+  active: boolean;
+  _count?: { memberships: number };
+}
+
+export interface CustomerMembership {
+  id: string;
+  customerId: string;
+  customer?: { id: string; name: string; phone: string; email: string | null };
+  tierId: string;
+  tier?: { id: string; name: string; color: string | null; discountPercent: number };
+  startedAt: string;
+  expiresAt: string | null;
+  active: boolean;
+  note: string | null;
+}
+
 export interface Coupon {
   id: string;
   code: string;
@@ -278,6 +337,7 @@ export interface SiteConfig {
   cancellationPolicy: string | null;
   privacyPolicy: string | null;
   termsOfService: string | null;
+  enableBnpl?: boolean;
 }
 
 export interface Photo {

@@ -33,6 +33,8 @@ import { productsRouter } from "./routes/products.js";
 import { staffBlocksRouter } from "./routes/staffblocks.js";
 import { commissionsRouter } from "./routes/commissions.js";
 import { marketingRouter } from "./routes/marketing.js";
+import { packagesRouter } from "./routes/packages.js";
+import { membershipsRouter } from "./routes/memberships.js";
 import { startCron } from "./cron.js";
 
 const app = express();
@@ -162,6 +164,8 @@ app.use("/api/products", productsRouter);
 app.use("/api/staff-blocks", staffBlocksRouter);
 app.use("/api/commissions", commissionsRouter);
 app.use("/api/marketing", marketingRouter);
+app.use("/api/packages", packagesRouter);
+app.use("/api/memberships", membershipsRouter);
 
 app.use("/uploads", uploadsStatic);
 

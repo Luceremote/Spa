@@ -73,6 +73,7 @@ const configSchema = z.object({
   cancellationPolicy: z.string().max(5000).transform((s) => sanitizeText(s, 5000)).optional().nullable(),
   privacyPolicy: z.string().max(20000).transform((s) => sanitizeText(s, 20000)).optional().nullable(),
   termsOfService: z.string().max(20000).transform((s) => sanitizeText(s, 20000)).optional().nullable(),
+  enableBnpl: z.boolean().optional(),
 });
 
 siteConfigRouter.put("/", requireAuth, async (req, res, next) => {
