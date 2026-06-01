@@ -41,6 +41,9 @@ const schema = z.object({
   ENABLE_CRON: z.coerce.boolean().default(true),
   // Recordatorio: cuántos minutos antes de la cita enviarlo
   REMINDER_MINUTES_BEFORE: z.coerce.number().int().positive().default(60),
+  // Sentry: si está definido, captura errores y trazas
+  SENTRY_DSN: z.string().default(""),
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0.1),
 });
 
 const parsed = schema.safeParse(process.env);

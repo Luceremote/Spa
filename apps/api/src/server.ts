@@ -1,3 +1,6 @@
+import { initSentry, Sentry } from "./sentry.js";
+initSentry();
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";

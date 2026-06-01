@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
+import { Sentry } from "../sentry.js";
 
 export function notFound(_req: Request, res: Response) {
   res.status(404).json({ error: "Ruta no encontrada" });
@@ -16,10 +17,14 @@ export function errorHandler(
   }
   if (err instanceof Error) {
     const status = (err as any).status ?? 500;
-    if (status >= 500) console.error(err);
+    if (status >= 500) {
+      console.error(err);
+      Sentry.captureException(err);
+    }
     return res.status(status).json({ error: err.message || "Error interno" });
   }
   console.error("Error desconocido:", err);
+  Sentry.captureException(err);
   res.status(500).json({ error: "Error interno" });
 }
 
