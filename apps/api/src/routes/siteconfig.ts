@@ -74,6 +74,17 @@ const configSchema = z.object({
   privacyPolicy: z.string().max(20000).transform((s) => sanitizeText(s, 20000)).optional().nullable(),
   termsOfService: z.string().max(20000).transform((s) => sanitizeText(s, 20000)).optional().nullable(),
   enableBnpl: z.boolean().optional(),
+  navLinks: z
+    .array(
+      z.object({
+        href: z.string().max(200).transform((s) => sanitizeText(s, 200)),
+        label: z.string().min(1).max(40).transform((s) => sanitizeText(s, 40)),
+        visible: z.boolean(),
+      })
+    )
+    .max(20)
+    .optional()
+    .nullable(),
 });
 
 siteConfigRouter.put("/", requireAuth, async (req, res, next) => {

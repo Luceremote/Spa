@@ -34,6 +34,7 @@ import {
   Crown,
   BarChart3,
   UserMinus,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, getToken, setToken } from "@/lib/api";
@@ -64,6 +65,7 @@ const NAV = [
   { href: "/admin/reportes", label: "Reportes", icon: BarChart3 },
   { href: "/admin/seguimiento", label: "Seguimiento", icon: UserMinus },
   { href: "/admin/cierres", label: "Días cerrados", icon: CalendarX },
+  { href: "/admin/navegacion", label: "Navegación", icon: Navigation },
   { href: "/admin/personalizacion", label: "Personalización", icon: Palette },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },
   { href: "/admin/seguridad", label: "Seguridad", icon: ShieldCheck },

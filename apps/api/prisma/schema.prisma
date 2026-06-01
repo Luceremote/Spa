@@ -468,6 +468,8 @@ model SiteConfig {
   termsOfService     String?
   // Activa métodos de pago "Compra ahora, paga después" en Stripe Checkout (Klarna/Afterpay/Affirm)
   enableBnpl    Boolean  @default(false)
+  // Links del navbar público: array de {href, label, visible, order}. Si null/vacío, usa default.
+  navLinks      Json?
   updatedAt     DateTime @updatedAt
 }
 

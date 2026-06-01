@@ -338,6 +338,7 @@ export interface SiteConfig {
   privacyPolicy: string | null;
   termsOfService: string | null;
   enableBnpl?: boolean;
+  navLinks?: { href: string; label: string; visible: boolean }[] | null;
 }
 
 export interface Photo {

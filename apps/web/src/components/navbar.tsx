@@ -12,22 +12,26 @@ interface Props {
   config: SiteConfig;
 }
 
-const LINKS = [
-  { href: "/", label: "Inicio" },
-  { href: "/servicios", label: "Servicios" },
-  { href: "/sobre", label: "Sobre" },
-  { href: "/galeria", label: "Galería" },
-  { href: "/resenas", label: "Reseñas" },
-  { href: "/gift-cards", label: "Gift Cards" },
-  { href: "/paquetes", label: "Paquetes" },
-  { href: "/membresias", label: "Membresías" },
-  { href: "/mis-reservas", label: "Mis reservas" },
-  { href: "/contacto", label: "Contacto" },
+export const DEFAULT_NAV_LINKS = [
+  { href: "/", label: "Inicio", visible: true },
+  { href: "/servicios", label: "Servicios", visible: true },
+  { href: "/sobre", label: "Sobre", visible: true },
+  { href: "/galeria", label: "Galería", visible: true },
+  { href: "/resenas", label: "Reseñas", visible: true },
+  { href: "/gift-cards", label: "Gift Cards", visible: true },
+  { href: "/paquetes", label: "Paquetes", visible: true },
+  { href: "/membresias", label: "Membresías", visible: true },
+  { href: "/mis-reservas", label: "Mis reservas", visible: true },
+  { href: "/contacto", label: "Contacto", visible: true },
 ];
 
 export function Navbar({ config }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const LINKS = (
+    config.navLinks && config.navLinks.length > 0 ? config.navLinks : DEFAULT_NAV_LINKS
+  ).filter((l) => l.visible);
 
   // Cerrar drawer al navegar
   useEffect(() => {
