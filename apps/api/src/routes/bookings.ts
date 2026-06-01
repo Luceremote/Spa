@@ -32,6 +32,8 @@ const MIN_LEAD_MINUTES = 30;
 const MAX_DAYS_AHEAD = 180;
 const OPENING_HOUR = 8;
 const CLOSING_HOUR = 21;
+// Antelación mínima para que el cliente cancele/reagende por su cuenta (horas).
+const MIN_SELF_MANAGE_HOURS = 12;
 
 // Conflicto: si hay staffId, sólo conflictúa con otras reservas del mismo staff.
 // Si NO hay staffId, se compara contra reservas sin staff (recurso "spa global" — opcional, lo aplicamos como
@@ -315,6 +317,114 @@ bookingsRouter.get("/lookup", async (req, res, next) => {
       take: 50,
     });
     res.json({ bookings });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Verifica propiedad de una reserva por teléfono (el teléfono actúa como secreto blando,
+// mismo modelo de confianza que /lookup). Devuelve la reserva con su servicio.
+async function findOwnedBooking(bookingId: string, rawPhone: string) {
+  const phone = sanitizePhoneDigits(rawPhone);
+  if (phone.length < 7) throw new HttpError(400, "Teléfono inválido");
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { service: true, customer: true, payment: true },
+  });
+  if (!booking) throw new HttpError(404, "Reserva no encontrada");
+  if (sanitizePhoneDigits(booking.customer.phone) !== phone) {
+    // No revelar si existe: mismo mensaje que "no encontrada"
+    throw new HttpError(404, "Reserva no encontrada");
+  }
+  return booking;
+}
+
+function assertSelfManageable(startAt: Date, status: string) {
+  if (["CANCELLED", "COMPLETED", "NO_SHOW"].includes(status)) {
+    throw new HttpError(400, "Esta reserva ya no se puede modificar");
+  }
+  const cutoff = new Date(Date.now() + MIN_SELF_MANAGE_HOURS * 60 * 60_000);
+  if (startAt < cutoff) {
+    throw new HttpError(
+      400,
+      `Debes gestionar con al menos ${MIN_SELF_MANAGE_HOURS} horas de antelación. Contáctanos para cambios de último momento.`
+    );
+  }
+}
+
+const cancelPublicSchema = z.object({ phone: z.string().min(7).max(20) });
+
+// Público: cancelar mi propia reserva
+bookingsRouter.post("/:id/cancel-public", async (req, res, next) => {
+  try {
+    const id = String(req.params.id).slice(0, 50);
+    const { phone } = cancelPublicSchema.parse(req.body);
+    const booking = await findOwnedBooking(id, phone);
+    assertSelfManageable(booking.startAt, booking.status);
+
+    await prisma.booking.update({ where: { id }, data: { status: "CANCELLED" } });
+
+    // Aviso al admin (best-effort). Si ya estaba pagada, el admin gestiona el reembolso.
+    const cfg = await prisma.siteConfig.findUnique({ where: { id: "singleton" } });
+    if (env.ADMIN_EMAIL) {
+      sendMail({
+        to: env.ADMIN_EMAIL,
+        subject: `Reserva cancelada por el cliente — ${booking.service.name}`,
+        html: `<p>El cliente <strong>${booking.customer.name}</strong> (${booking.customer.phone}) canceló su reserva de <strong>${booking.service.name}</strong> del ${booking.startAt.toISOString()}.</p>${
+          booking.payment?.status === "PAID"
+            ? "<p><strong>Estaba pagada</strong> — revisa si procede reembolso.</p>"
+            : ""
+        }`,
+      });
+    }
+
+    res.json({ ok: true, wasPaid: booking.payment?.status === "PAID" });
+  } catch (e) {
+    next(e);
+  }
+});
+
+const reschedulePublicSchema = z.object({
+  phone: z.string().min(7).max(20),
+  startAt: z.string().datetime(),
+  staffId: z.string().cuid().optional().nullable(),
+});
+
+// Público: reagendar mi propia reserva
+bookingsRouter.post("/:id/reschedule-public", async (req, res, next) => {
+  try {
+    const id = String(req.params.id).slice(0, 50);
+    const body = reschedulePublicSchema.parse(req.body);
+    const booking = await findOwnedBooking(id, body.phone);
+    assertSelfManageable(booking.startAt, booking.status);
+
+    const startAt = new Date(body.startAt);
+    if (isNaN(startAt.getTime())) throw new HttpError(400, "Fecha inválida");
+    const endAt = new Date(startAt.getTime() + booking.service.durationMinutes * 60_000);
+
+    await validateScheduling(startAt, endAt);
+    const newStaffId = body.staffId !== undefined ? body.staffId : booking.staffId;
+    if (newStaffId) {
+      await validateStaffAvailability(newStaffId, booking.serviceId, startAt, endAt);
+    }
+    if (await hasConflict(startAt, endAt, newStaffId, booking.id)) {
+      throw new HttpError(409, "Ese horario ya está reservado");
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        startAt,
+        endAt,
+        staffId: newStaffId,
+        // Re-disparar recordatorios para la nueva fecha
+        reminderSentAt: null,
+        emailReminderSentAt: null,
+      },
+      include: { service: true, staff: true, payment: { select: { status: true, amountCents: true } } },
+    });
+
+    res.json({ booking: updated });
   } catch (e) {
     next(e);
   }

@@ -22,6 +22,7 @@ export const DEFAULT_NAV_LINKS = [
   { href: "/paquetes", label: "Paquetes", visible: true },
   { href: "/membresias", label: "Membresías", visible: true },
   { href: "/mis-reservas", label: "Mis reservas", visible: true },
+  { href: "/saldo", label: "Consultar saldo", visible: true },
   { href: "/contacto", label: "Contacto", visible: true },
 ];
 
