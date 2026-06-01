@@ -5,6 +5,7 @@ import { env } from "./env.js";
 import { sendPush } from "./push.js";
 import { sendMail, bookingReminderEmail } from "./mail.js";
 import { processRecurringTransactions } from "./finances-helpers.js";
+import { sendFollowupBatch } from "./followup-helpers.js";
 
 let started = false;
 
@@ -111,6 +112,16 @@ export function startCron() {
       if (n > 0) console.log(`[cron] ${n} recurring transaction(s) created`);
     } catch (e) {
       console.error("[cron] error procesando recurrentes:", e);
+    }
+  });
+
+  // ─── Lunes 10am: re-engagement de clientes inactivos ──
+  cron.schedule("0 10 * * 1", async () => {
+    try {
+      const sent = await sendFollowupBatch();
+      if (sent > 0) console.log(`[cron] followup enviado a ${sent} cliente(s)`);
+    } catch (e) {
+      console.error("[cron] error followup:", e);
     }
   });
 

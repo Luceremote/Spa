@@ -112,6 +112,60 @@ export function bookingReminderEmail(d: BookingMailData): { subject: string; htm
   };
 }
 
+interface SurveyMailData {
+  spaName: string;
+  customerName: string;
+  serviceName: string;
+  reviewUrl: string;
+}
+
+export function postServiceSurveyEmail(d: SurveyMailData): { subject: string; html: string } {
+  return {
+    subject: `¿Cómo fue tu experiencia en ${d.spaName}?`,
+    html: `<div style="${BOX}">
+      <h2 style="color:#d63384;margin:0 0 12px">Gracias por visitarnos 🌿</h2>
+      <p>Hola <strong>${esc(d.customerName)}</strong>, esperamos que hayas disfrutado de <strong>${esc(d.serviceName)}</strong>.</p>
+      <p>Tu opinión nos ayuda a mejorar y a otros clientes a elegir. ¿Nos regalas un minuto para contarnos cómo te fue?</p>
+      <p style="text-align:center;margin:24px 0">
+        <a href="${esc(d.reviewUrl)}" style="${BTN}">Dejar mi reseña</a>
+      </p>
+      <p style="color:#666;font-size:14px">Tarda menos de un minuto. ¡Gracias!</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+      <p style="color:#999;font-size:12px;text-align:center">${esc(d.spaName)}</p>
+    </div>`,
+  };
+}
+
+interface FollowupMailData {
+  spaName: string;
+  customerName: string;
+  appUrl: string;
+  daysSince: number;
+  couponCode?: string | null;
+}
+
+export function followupEmail(d: FollowupMailData): { subject: string; html: string } {
+  return {
+    subject: `Te extrañamos en ${d.spaName} 💆`,
+    html: `<div style="${BOX}">
+      <h2 style="color:#d63384;margin:0 0 12px">¡Hola ${esc(d.customerName)}!</h2>
+      <p>Hace ${d.daysSince} días que no nos visitas. Reserva una sesión y regálate un momento de calma.</p>
+      ${d.couponCode
+        ? `<div style="background:linear-gradient(135deg,#d63384,#f06292);color:#fff;padding:24px;border-radius:12px;text-align:center;margin:24px 0">
+            <div style="font-size:14px;opacity:0.9;text-transform:uppercase;letter-spacing:2px">Tu código</div>
+            <div style="font-size:32px;font-weight:700;letter-spacing:4px;margin:8px 0">${esc(d.couponCode)}</div>
+            <div style="font-size:14px;opacity:0.9">Úsalo al reservar</div>
+          </div>`
+        : ""}
+      <p style="text-align:center;margin:24px 0">
+        <a href="${esc(d.appUrl)}/reservar" style="${BTN}">Reservar ahora</a>
+      </p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+      <p style="color:#999;font-size:12px;text-align:center">${esc(d.spaName)} — <a href="${esc(d.appUrl)}/unsubscribe" style="color:#999">cancelar suscripción</a></p>
+    </div>`,
+  };
+}
+
 export function bookingPaidEmail(d: BookingMailData): { subject: string; html: string } {
   return {
     subject: `Pago confirmado — ${d.spaName}`,

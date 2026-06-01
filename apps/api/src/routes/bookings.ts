@@ -8,7 +8,7 @@ import {
   sanitizePhoneDigits,
   normalizeEmail,
 } from "../security/sanitize.js";
-import { sendMail, bookingConfirmationEmail, newBookingAdminEmail } from "../mail.js";
+import { sendMail, bookingConfirmationEmail, newBookingAdminEmail, postServiceSurveyEmail } from "../mail.js";
 import { env } from "../env.js";
 import { evaluateCoupon } from "./coupons.js";
 
@@ -392,6 +392,28 @@ bookingsRouter.put("/:id", requireAuth, async (req, res, next) => {
       },
       include: { customer: true, service: true, payment: true, staff: true, coupon: true },
     });
+
+    // Si pasa a COMPLETED y aún no le mandamos la encuesta, dispárala (best-effort)
+    if (
+      data.status === "COMPLETED" &&
+      existing.status !== "COMPLETED" &&
+      !booking.surveySentAt &&
+      booking.customer.email
+    ) {
+      const cfg = await prisma.siteConfig.findUnique({ where: { id: "singleton" } });
+      const tpl = postServiceSurveyEmail({
+        spaName: cfg?.spaName ?? "Spa",
+        customerName: booking.customer.name,
+        serviceName: booking.service.name,
+        reviewUrl: `${env.APP_URL}/resenas/nueva?b=${booking.id}`,
+      });
+      sendMail({ to: booking.customer.email, ...tpl });
+      await prisma.booking.update({
+        where: { id },
+        data: { surveySentAt: new Date() },
+      });
+    }
+
     res.json({ booking });
   } catch (e) {
     next(e);

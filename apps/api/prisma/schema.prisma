@@ -104,6 +104,8 @@ model Customer {
   loyaltyAccount LoyaltyAccount?
   packagePurchases PackagePurchase[] @relation("CustomerPackages")
   membership CustomerMembership? @relation("CustomerMembership")
+  // Última vez que se le envió un email de "te extrañamos" (para no spammear)
+  lastFollowupAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -338,6 +340,7 @@ model Booking {
   notes       String?
   reminderSentAt        DateTime? // push reminder (~1h antes)
   emailReminderSentAt   DateTime? // email reminder (~24h antes)
+  surveySentAt          DateTime? // email post-servicio (encuesta/reseña)
   payment     Payment?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
