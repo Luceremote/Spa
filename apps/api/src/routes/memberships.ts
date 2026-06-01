@@ -21,6 +21,32 @@ membershipsRouter.get("/tiers", async (_req, res, next) => {
   }
 });
 
+// ─── PÚBLICO: mi membresía activa (por teléfono) ──
+membershipsRouter.get("/mine", async (req, res, next) => {
+  try {
+    const phone = String(req.query.phone ?? "").replace(/\D/g, "").slice(0, 15);
+    if (phone.length < 7) return res.json({ membership: null });
+    const customer = await prisma.customer.findFirst({ where: { phone } });
+    if (!customer) return res.json({ membership: null });
+    const m = await prisma.customerMembership.findUnique({
+      where: { customerId: customer.id },
+      include: { tier: { select: { name: true, discountPercent: true, color: true, active: true } } },
+    });
+    if (!m || !m.active || !m.tier.active || (m.expiresAt && m.expiresAt < new Date())) {
+      return res.json({ membership: null });
+    }
+    res.json({
+      membership: {
+        tierName: m.tier.name,
+        discountPercent: m.tier.discountPercent,
+        color: m.tier.color,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ─── ADMIN: CRUD tiers ─────────────────────────────
 membershipsRouter.get("/tiers/admin/list", requireAuth, async (_req, res, next) => {
   try {

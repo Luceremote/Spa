@@ -29,6 +29,44 @@ packagesRouter.get("/", async (_req, res, next) => {
   }
 });
 
+// ─── PÚBLICO: mis paquetes usables para un servicio (por teléfono) ──
+packagesRouter.get("/mine", async (req, res, next) => {
+  try {
+    const phone = String(req.query.phone ?? "").replace(/\D/g, "").slice(0, 15);
+    const serviceId = req.query.serviceId ? String(req.query.serviceId).slice(0, 50) : undefined;
+    if (phone.length < 7) return res.json({ purchases: [] });
+
+    const customer = await prisma.customer.findFirst({ where: { phone } });
+    if (!customer) return res.json({ purchases: [] });
+
+    const purchases = await prisma.packagePurchase.findMany({
+      where: {
+        customerId: customer.id,
+        status: "ACTIVE",
+        sessionsRemaining: { gt: 0 },
+        expiresAt: { gt: new Date() },
+        ...(serviceId ? { package: { serviceId } } : {}),
+      },
+      include: { package: { include: { service: { select: { id: true, name: true } } } } },
+      orderBy: { expiresAt: "asc" },
+    });
+
+    res.json({
+      purchases: purchases.map((p) => ({
+        id: p.id,
+        packageName: p.package.name,
+        serviceId: p.package.serviceId,
+        serviceName: p.package.service.name,
+        sessionsRemaining: p.sessionsRemaining,
+        sessionsTotal: p.sessionsTotal,
+        expiresAt: p.expiresAt.toISOString(),
+      })),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ─── ADMIN: CRUD paquetes ──────────────────────────
 packagesRouter.get("/admin/list", requireAuth, async (_req, res, next) => {
   try {

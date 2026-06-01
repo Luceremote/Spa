@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Gift, X } from "lucide-react";
+import { Loader2, CheckCircle2, Gift, X, Package, Crown, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,72 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
   const [gcError, setGcError] = useState("");
   const [validatingGc, setValidatingGc] = useState(false);
 
+  // Beneficios del cliente (se cargan al escribir el teléfono en el paso 2)
+  const [member, setMember] = useState<{ tierName: string; discountPercent: number } | null>(null);
+  const [usablePackages, setUsablePackages] = useState<
+    { id: string; packageName: string; sessionsRemaining: number }[]
+  >([]);
+  const [usePackageId, setUsePackageId] = useState<string>("");
+  const [loyalty, setLoyalty] = useState<{
+    balance: number;
+    pointValueCents: number;
+    minRedeemPoints: number;
+  } | null>(null);
+  const [redeemPoints, setRedeemPoints] = useState(0);
+
   const service = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
+
+  // Cargar beneficios cuando el teléfono es válido (≥7 dígitos) y estamos en el paso 2
+  useEffect(() => {
+    const digits = phone.replace(/\D/g, "");
+    if (step !== 2 || digits.length < 7 || !service) {
+      setMember(null);
+      setUsablePackages([]);
+      setLoyalty(null);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const [mem, pkgs, bal, settings] = await Promise.all([
+          api<{ membership: { tierName: string; discountPercent: number } | null }>(
+            `/memberships/mine?phone=${encodeURIComponent(digits)}`
+          ).catch(() => ({ membership: null })),
+          api<{ purchases: { id: string; packageName: string; sessionsRemaining: number }[] }>(
+            `/packages/mine?phone=${encodeURIComponent(digits)}&serviceId=${service.id}`
+          ).catch(() => ({ purchases: [] })),
+          api<{ found: boolean; balance: number }>(
+            `/marketing/loyalty/balance?phone=${encodeURIComponent(digits)}`
+          ).catch(() => ({ found: false, balance: 0 })),
+          api<{ settings: { active: boolean; pointValueCents: number; minRedeemPoints: number } }>(
+            `/marketing/loyalty/settings`
+          ).catch(() => ({ settings: { active: false, pointValueCents: 0, minRedeemPoints: 0 } })),
+        ]);
+        if (cancelled) return;
+        setMember(mem.membership);
+        setUsablePackages(pkgs.purchases);
+        if (
+          settings.settings.active &&
+          settings.settings.pointValueCents > 0 &&
+          bal.balance >= settings.settings.minRedeemPoints
+        ) {
+          setLoyalty({
+            balance: bal.balance,
+            pointValueCents: settings.settings.pointValueCents,
+            minRedeemPoints: settings.settings.minRedeemPoints,
+          });
+        } else {
+          setLoyalty(null);
+        }
+      } catch {
+        /* silencioso */
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [phone, step, service]);
 
   // Staff disponible para el servicio seleccionado
   useEffect(() => {
@@ -128,7 +193,9 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
           staffId: staffId || null,
           startAt,
           notes: notes || null,
-          giftCardCode: giftCard?.code ?? null,
+          giftCardCode: usePackageId ? null : giftCard?.code ?? null,
+          usePackagePurchaseId: usePackageId || null,
+          redeemPoints: usePackageId ? null : redeemPoints > 0 ? redeemPoints : null,
         },
       });
       setCreatedBooking(result.booking);
@@ -156,7 +223,18 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
     }
   }
 
-  const finalPrice = service ? service.priceCents - (giftCard?.applied ?? 0) : 0;
+  // ── Cálculo de precio en vivo (el backend es la autoridad final) ──
+  const usingPackage = !!usePackageId;
+  const base = service?.priceCents ?? 0;
+  const memberCents = usingPackage || !member ? 0 : Math.round((base * member.discountPercent) / 100);
+  const afterMember = base - memberCents;
+  const loyaltyCents =
+    usingPackage || !loyalty || redeemPoints <= 0
+      ? 0
+      : Math.min(redeemPoints * loyalty.pointValueCents, afterMember);
+  const afterLoyalty = afterMember - loyaltyCents;
+  const gcApplied = usingPackage ? 0 : Math.min(giftCard?.balanceCents ?? 0, afterLoyalty);
+  const finalPrice = usingPackage ? 0 : Math.max(0, afterLoyalty - gcApplied);
   const isFreeAfterGc = createdBooking && createdBooking.priceCents === 0;
 
   // PASO 3 - Confirmación
@@ -186,7 +264,7 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
                   <span>{formatMoney(createdBooking.basePriceCents)}</span>
                 </p>
                 <p className="flex justify-between text-primary">
-                  <span>Gift card:</span>
+                  <span>{usingPackage ? "Paquete" : "Descuentos"}:</span>
                   <span>− {formatMoney(createdBooking.discountCents)}</span>
                 </p>
               </>
@@ -212,7 +290,7 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
           </div>
           <p className="text-xs text-muted-foreground mt-4">
             {isFreeAfterGc
-              ? "Tu reserva está cubierta por la gift card. Te esperamos."
+              ? "Tu reserva está cubierta y confirmada. ¡Te esperamos!"
               : "Tu reserva queda confirmada al recibir el pago."}
           </p>
         </CardContent>
@@ -365,8 +443,102 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
               />
             </div>
 
+            {/* Paquete prepagado */}
+            {usablePackages.length > 0 && (
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-primary" /> Usar tu paquete
+                </Label>
+                {usablePackages.map((p) => (
+                  <label
+                    key={p.id}
+                    className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                      usePackageId === p.id
+                        ? "bg-primary/5 border-primary/40"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={usePackageId === p.id}
+                      onChange={() => setUsePackageId(usePackageId === p.id ? "" : p.id)}
+                    />
+                    <span className="text-sm flex-1">
+                      <span className="font-medium">{p.packageName}</span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        — {p.sessionsRemaining} sesión(es) disponible(s)
+                      </span>
+                    </span>
+                  </label>
+                ))}
+                {usePackageId && (
+                  <p className="text-xs text-primary">
+                    Esta reserva usará 1 sesión de tu paquete. No se cobrará nada.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Descuento de socio (automático) */}
+            {!usePackageId && member && member.discountPercent > 0 && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-primary/5 border border-primary/20 text-sm">
+                <Crown className="h-4 w-4 text-primary" />
+                <span>
+                  Socio <strong>{member.tierName}</strong>: {member.discountPercent}% de descuento
+                  aplicado
+                </span>
+              </div>
+            )}
+
+            {/* Canje de puntos */}
+            {!usePackageId && loyalty && (
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="flex items-center gap-2">
+                  <Award className="h-4 w-4 text-primary" /> Canjear puntos (opcional)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Tienes <strong>{loyalty.balance}</strong> puntos · cada punto vale{" "}
+                  {formatMoney(loyalty.pointValueCents)} · mínimo {loyalty.minRedeemPoints}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={loyalty.balance}
+                    step={50}
+                    value={redeemPoints || ""}
+                    onChange={(e) => {
+                      const v = Math.max(0, Math.min(loyalty.balance, parseInt(e.target.value) || 0));
+                      setRedeemPoints(v);
+                    }}
+                    placeholder="0"
+                    className="max-w-[140px]"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRedeemPoints(loyalty.balance)}
+                  >
+                    Usar máximo
+                  </Button>
+                  {redeemPoints > 0 && (
+                    <span className="text-sm text-primary font-medium">
+                      − {formatMoney(loyaltyCents)}
+                    </span>
+                  )}
+                </div>
+                {redeemPoints > 0 && redeemPoints < loyalty.minRedeemPoints && (
+                  <p className="text-xs text-destructive">
+                    Debes canjear al menos {loyalty.minRedeemPoints} puntos.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Gift Card */}
-            <div className="space-y-2 pt-2 border-t">
+            <div className={`space-y-2 pt-2 border-t ${usePackageId ? "opacity-50 pointer-events-none" : ""}`}>
               <Label className="flex items-center gap-2">
                 <Gift className="h-4 w-4 text-primary" /> Gift Card (opcional)
               </Label>
@@ -427,11 +599,32 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
                   <span>{service.name}</span>
                   <span>{formatMoney(service.priceCents)}</span>
                 </p>
-                {giftCard && (
+                {usingPackage ? (
                   <p className="flex justify-between text-primary">
-                    <span>Gift card ({giftCard.code}):</span>
-                    <span>− {formatMoney(giftCard.applied)}</span>
+                    <span>Paquete prepagado:</span>
+                    <span>cubierto</span>
                   </p>
+                ) : (
+                  <>
+                    {memberCents > 0 && (
+                      <p className="flex justify-between text-primary">
+                        <span>Socio ({member?.discountPercent}%):</span>
+                        <span>− {formatMoney(memberCents)}</span>
+                      </p>
+                    )}
+                    {loyaltyCents > 0 && (
+                      <p className="flex justify-between text-primary">
+                        <span>Puntos ({redeemPoints}):</span>
+                        <span>− {formatMoney(loyaltyCents)}</span>
+                      </p>
+                    )}
+                    {giftCard && gcApplied > 0 && (
+                      <p className="flex justify-between text-primary">
+                        <span>Gift card ({giftCard.code}):</span>
+                        <span>− {formatMoney(gcApplied)}</span>
+                      </p>
+                    )}
+                  </>
                 )}
                 <p className="flex justify-between pt-1 border-t font-semibold">
                   <span>Total a pagar:</span>

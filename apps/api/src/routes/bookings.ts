@@ -11,6 +11,7 @@ import {
 import { sendMail, bookingConfirmationEmail, newBookingAdminEmail, postServiceSurveyEmail } from "../mail.js";
 import { env } from "../env.js";
 import { evaluateCoupon } from "./coupons.js";
+import { getActiveDiscountForCustomer } from "./memberships.js";
 
 // Valida que una gift card exista, esté activa y tenga al menos algo de saldo
 async function evaluateGiftCard(code: string, basePriceCents: number) {
@@ -139,6 +140,10 @@ const createBookingSchema = z.object({
   notes: z.string().max(500).transform((s) => sanitizeText(s, 500)).optional().nullable(),
   couponCode: z.string().max(50).optional().nullable(),
   giftCardCode: z.string().max(20).optional().nullable(),
+  // Usar una sesión de un paquete prepagado (cubre la reserva entera; excluye otros descuentos)
+  usePackagePurchaseId: z.string().cuid().optional().nullable(),
+  // Canjear puntos de lealtad por descuento
+  redeemPoints: z.number().int().min(0).max(10_000_000).optional().nullable(),
 });
 
 bookingsRouter.post("/", async (req, res, next) => {
@@ -159,26 +164,8 @@ bookingsRouter.post("/", async (req, res, next) => {
       throw new HttpError(409, "Ese horario ya está reservado");
     }
 
-    // Cupón (si viene)
-    const couponEval = body.couponCode
-      ? await evaluateCoupon(body.couponCode, service.priceCents)
-      : { coupon: null, discountCents: 0, finalCents: service.priceCents };
-    if (body.couponCode && couponEval.error) {
-      throw new HttpError(400, couponEval.error);
-    }
-
-    // Gift card (si viene) — aplica DESPUÉS del cupón al monto ya descontado
-    let giftCardApplied = 0;
-    let giftCardId: string | null = null;
-    if (body.giftCardCode) {
-      const gc = await evaluateGiftCard(body.giftCardCode, couponEval.finalCents);
-      if (gc.error) throw new HttpError(400, gc.error);
-      giftCardApplied = gc.applied!;
-      giftCardId = gc.card!.id;
-    }
-    const finalCentsAfterAll = couponEval.finalCents - giftCardApplied;
-
-    // Cliente: buscar por teléfono o crear (transaccional)
+    // Cliente: buscar por teléfono o crear (transaccional) — necesario ANTES de calcular
+    // descuentos porque membresía/paquete/puntos dependen del cliente.
     const customer = await prisma.$transaction(async (tx) => {
       const existing = await tx.customer.findFirst({
         where: { phone: body.customer.phone },
@@ -202,6 +189,94 @@ bookingsRouter.post("/", async (req, res, next) => {
       });
     });
 
+    // ── Cálculo de precio ───────────────────────────────────
+    // Caso A: paquete prepagado → cubre la reserva entera, excluye otros descuentos.
+    let usePackage: { id: string } | null = null;
+    let membershipDiscountCents = 0;
+    let couponEval: { coupon: any; discountCents: number; finalCents: number; error?: string } = {
+      coupon: null,
+      discountCents: 0,
+      finalCents: service.priceCents,
+    };
+    let loyaltyRedeemPoints = 0;
+    let loyaltyRedeemCents = 0;
+    let giftCardApplied = 0;
+    let giftCardId: string | null = null;
+    let basePriceCents = service.priceCents;
+    let priceCents = service.priceCents;
+    let discountCents = 0;
+
+    if (body.usePackagePurchaseId) {
+      const purchase = await prisma.packagePurchase.findUnique({
+        where: { id: body.usePackagePurchaseId },
+        include: { package: true },
+      });
+      if (
+        !purchase ||
+        purchase.customerId !== customer.id ||
+        purchase.status !== "ACTIVE" ||
+        purchase.sessionsRemaining <= 0 ||
+        purchase.expiresAt < new Date() ||
+        purchase.package.serviceId !== service.id
+      ) {
+        throw new HttpError(400, "El paquete no es válido para este servicio");
+      }
+      usePackage = { id: purchase.id };
+      basePriceCents = service.priceCents;
+      discountCents = service.priceCents; // cubierto por el paquete
+      priceCents = 0;
+    } else {
+      // Membresía: descuento % automático sobre el precio base
+      const memberPct = await getActiveDiscountForCustomer(customer.id);
+      membershipDiscountCents = Math.round((service.priceCents * memberPct) / 100);
+      const afterMembership = service.priceCents - membershipDiscountCents;
+
+      // Cupón sobre el precio ya descontado por membresía
+      couponEval = body.couponCode
+        ? await evaluateCoupon(body.couponCode, afterMembership)
+        : { coupon: null, discountCents: 0, finalCents: afterMembership };
+      if (body.couponCode && couponEval.error) {
+        throw new HttpError(400, couponEval.error);
+      }
+
+      // Canje de puntos de lealtad
+      if (body.redeemPoints && body.redeemPoints > 0) {
+        const settings = await prisma.loyaltySettings.findUnique({ where: { id: "singleton" } });
+        if (!settings || !settings.active || settings.pointValueCents <= 0) {
+          throw new HttpError(400, "El programa de lealtad no está activo");
+        }
+        if (body.redeemPoints < settings.minRedeemPoints) {
+          throw new HttpError(400, `Mínimo ${settings.minRedeemPoints} puntos para canjear`);
+        }
+        const account = await prisma.loyaltyAccount.findUnique({
+          where: { customerId: customer.id },
+        });
+        if (!account || account.pointsBalance < body.redeemPoints) {
+          throw new HttpError(400, "No tienes suficientes puntos");
+        }
+        // El valor canjeado no puede exceder el monto restante
+        const maxValue = couponEval.finalCents;
+        const desiredValue = body.redeemPoints * settings.pointValueCents;
+        loyaltyRedeemCents = Math.min(desiredValue, maxValue);
+        // Recalcular puntos realmente usados (no quemar de más si topa con el monto)
+        loyaltyRedeemPoints = Math.ceil(loyaltyRedeemCents / settings.pointValueCents);
+      }
+      const afterLoyalty = couponEval.finalCents - loyaltyRedeemCents;
+
+      // Gift card sobre el monto restante
+      if (body.giftCardCode) {
+        const gc = await evaluateGiftCard(body.giftCardCode, afterLoyalty);
+        if (gc.error) throw new HttpError(400, gc.error);
+        giftCardApplied = gc.applied!;
+        giftCardId = gc.card!.id;
+      }
+
+      basePriceCents = service.priceCents;
+      discountCents =
+        membershipDiscountCents + couponEval.discountCents + loyaltyRedeemCents + giftCardApplied;
+      priceCents = Math.max(0, afterLoyalty - giftCardApplied);
+    }
+
     const booking = await prisma.$transaction(async (tx) => {
       const b = await tx.booking.create({
         data: {
@@ -210,23 +285,68 @@ bookingsRouter.post("/", async (req, res, next) => {
           staffId: body.staffId ?? null,
           startAt,
           endAt,
-          basePriceCents: service.priceCents,
-          discountCents: couponEval.discountCents + giftCardApplied,
-          priceCents: finalCentsAfterAll,
+          basePriceCents,
+          discountCents,
+          priceCents,
           couponId: couponEval.coupon?.id ?? null,
           notes: body.notes ?? null,
-          status: "PENDING",
+          // Si no queda nada por pagar (paquete/gift card/puntos cubren todo), se confirma sola.
+          status: priceCents === 0 ? "CONFIRMED" : "PENDING",
         },
         include: { service: true, customer: true, staff: true, coupon: true },
       });
+
+      // Paquete: descuenta sesión + registra redención (guard contra carrera)
+      if (usePackage) {
+        const dec = await tx.packagePurchase.updateMany({
+          where: { id: usePackage.id, sessionsRemaining: { gt: 0 } },
+          data: { sessionsRemaining: { decrement: 1 } },
+        });
+        if (dec.count === 0) throw new HttpError(409, "El paquete ya no tiene sesiones disponibles");
+        await tx.packageRedemption.create({
+          data: { purchaseId: usePackage.id, bookingId: b.id },
+        });
+        const after = await tx.packagePurchase.findUnique({ where: { id: usePackage.id } });
+        if (after && after.sessionsRemaining <= 0) {
+          await tx.packagePurchase.update({
+            where: { id: usePackage.id },
+            data: { status: "USED_UP" },
+          });
+        }
+      }
+
       if (couponEval.coupon) {
         await tx.coupon.update({
           where: { id: couponEval.coupon.id },
           data: { usedCount: { increment: 1 } },
         });
       }
+
+      // Canje de puntos: descuenta saldo (guard) + movimiento REDEEM
+      if (loyaltyRedeemPoints > 0) {
+        const dec = await tx.loyaltyAccount.updateMany({
+          where: { customerId: customer.id, pointsBalance: { gte: loyaltyRedeemPoints } },
+          data: {
+            pointsBalance: { decrement: loyaltyRedeemPoints },
+            totalRedeemed: { increment: loyaltyRedeemPoints },
+          },
+        });
+        if (dec.count === 0) throw new HttpError(409, "Puntos insuficientes");
+        const acc = await tx.loyaltyAccount.findUnique({ where: { customerId: customer.id } });
+        if (acc) {
+          await tx.loyaltyMovement.create({
+            data: {
+              accountId: acc.id,
+              type: "REDEEM",
+              points: loyaltyRedeemPoints,
+              bookingId: b.id,
+              note: `Canje en reserva (${loyaltyRedeemCents} cts)`,
+            },
+          });
+        }
+      }
+
       if (giftCardId && giftCardApplied > 0) {
-        // Registra el redeem y descuenta el saldo de la gift card
         await tx.giftCardRedemption.create({
           data: { giftCardId, bookingId: b.id, amountCents: giftCardApplied },
         });
