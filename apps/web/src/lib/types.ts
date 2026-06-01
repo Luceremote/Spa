@@ -27,6 +27,7 @@ export interface Customer {
   email: string | null;
   phone: string;
   notes: string | null;
+  privateNotes?: string | null;
   createdAt: string;
   _count?: { bookings: number };
 }
@@ -65,7 +66,51 @@ export interface Staff {
   workingDays: number[];
   workingFrom: number;
   workingTo: number;
+  commissionPercent: number;
   services?: { id: string; name: string }[];
+}
+
+export type ProductMovementType = "IN" | "OUT" | "ADJUSTMENT";
+
+export interface Product {
+  id: string;
+  name: string;
+  sku: string | null;
+  description: string | null;
+  stock: number;
+  unit: string | null;
+  costCents: number | null;
+  priceCents: number | null;
+  lowStockAlert: number;
+  imageUrl: string | null;
+  active: boolean;
+  movements?: ProductMovement[];
+}
+
+export interface ProductMovement {
+  id: string;
+  productId: string;
+  type: ProductMovementType;
+  quantity: number;
+  unitCostCents: number | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface StaffBlock {
+  id: string;
+  staffId: string;
+  staff?: { id: string; name: string };
+  startAt: string;
+  endAt: string;
+  reason: string | null;
+}
+
+export interface CommissionSummary {
+  staff: { id: string; name: string; commissionPercent: number; avatarUrl: string | null };
+  totalRevenue: number;
+  commissionCents: number;
+  count: number;
 }
 
 export interface Coupon {

@@ -1,6 +1,8 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sanitizeText } from "../security/sanitize.js";
 
 export const customersRouter = Router();
 
@@ -42,6 +44,25 @@ customersRouter.get("/:id", async (req, res, next) => {
       },
     });
     if (!customer) return res.status(404).json({ error: "Cliente no encontrado" });
+    res.json({ customer });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Actualizar notas privadas y otros campos básicos (admin)
+const customerUpdateSchema = z.object({
+  privateNotes: z.string().max(5000).transform((s) => sanitizeText(s, 5000)).optional().nullable(),
+  notes: z.string().max(1000).transform((s) => sanitizeText(s, 1000)).optional().nullable(),
+  name: z.string().min(1).max(120).transform((s) => sanitizeText(s, 120)).optional(),
+  email: z.string().email().max(254).optional().nullable(),
+});
+
+customersRouter.put("/:id", async (req, res, next) => {
+  try {
+    const id = String(req.params.id).slice(0, 50);
+    const data = customerUpdateSchema.parse(req.body);
+    const customer = await prisma.customer.update({ where: { id }, data });
     res.json({ customer });
   } catch (e) {
     next(e);

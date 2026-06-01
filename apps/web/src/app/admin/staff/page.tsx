@@ -31,6 +31,7 @@ interface FormState {
   workingDays: number[];
   workingFrom: number;
   workingTo: number;
+  commissionPercent: number;
   serviceIds: string[];
 }
 
@@ -44,6 +45,7 @@ const EMPTY: FormState = {
   workingDays: [1, 2, 3, 4, 5, 6],
   workingFrom: 540,
   workingTo: 1140,
+  commissionPercent: 0,
   serviceIds: [],
 };
 
@@ -89,6 +91,7 @@ export default function StaffPage() {
       workingDays: s.workingDays,
       workingFrom: s.workingFrom,
       workingTo: s.workingTo,
+      commissionPercent: s.commissionPercent ?? 0,
       serviceIds: s.services?.map((sv) => sv.id) ?? [],
     });
     setEditing(s);
@@ -289,6 +292,23 @@ export default function StaffPage() {
                   onChange={(e) => setForm((f) => ({ ...f, workingTo: hhmmToMins(e.target.value) }))}
                 />
               </div>
+            </div>
+
+            <div>
+              <Label className="flex items-center gap-1">
+                Comisión (% sobre cada reserva completada)
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value={form.commissionPercent}
+                onChange={(e) => setForm((f) => ({ ...f, commissionPercent: Number(e.target.value) }))}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Solo se calcula sobre reservas con estado COMPLETED y pago confirmado. 0 = sin comisión.
+              </p>
             </div>
 
             <div>

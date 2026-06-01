@@ -51,6 +51,7 @@ const staffSchema = z.object({
   workingDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
   workingFrom: z.number().int().min(0).max(1440).optional(),
   workingTo: z.number().int().min(0).max(1440).optional(),
+  commissionPercent: z.number().min(0).max(100).optional(),
   serviceIds: z.array(z.string().cuid()).max(50).optional(),
 });
 

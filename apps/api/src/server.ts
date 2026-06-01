@@ -29,6 +29,9 @@ import { photosRouter } from "./routes/photos.js";
 import { reviewsRouter } from "./routes/reviews.js";
 import { subscribersRouter } from "./routes/subscribers.js";
 import { financesRouter } from "./routes/finances.js";
+import { productsRouter } from "./routes/products.js";
+import { staffBlocksRouter } from "./routes/staffblocks.js";
+import { commissionsRouter } from "./routes/commissions.js";
 import { startCron } from "./cron.js";
 
 const app = express();
@@ -154,6 +157,12 @@ app.use("/api/photos", photosRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/subscribers", subscribersRouter);
 app.use("/api/finances", financesRouter);
+app.use("/api/products", productsRouter);
+app.use("/api/staff-blocks", staffBlocksRouter);
+app.use("/api/commissions", commissionsRouter);
+app.use("/api/products", productsRouter);
+app.use("/api/staff-blocks", staffBlocksRouter);
+app.use("/api/commissions", commissionsRouter);
 
 app.use("/uploads", uploadsStatic);
 

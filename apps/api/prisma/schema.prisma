@@ -97,7 +97,8 @@ model Customer {
   name      String
   email     String?
   phone     String
-  notes     String?
+  notes     String?   // notas del cliente sobre sí mismo (alergias indicadas al reservar)
+  privateNotes String? // notas privadas del admin (no visibles al cliente)
   bookings  Booking[]
   pushTokens PushToken[]
   createdAt DateTime  @default(now())
@@ -153,11 +154,68 @@ model Staff {
   // Hora de inicio/fin en minutos desde medianoche (e.g. 540 = 9:00, 1140 = 19:00)
   workingFrom  Int       @default(540)
   workingTo    Int       @default(1140)
+  // Comisión: % sobre el precio del servicio (0-100). 0 = sin comisión, sueldo fijo aparte.
+  commissionPercent Float @default(0)
   // Servicios que puede realizar (si vacío => todos)
   services     Service[] @relation("StaffServices")
   bookings     Booking[]
+  blocks       StaffBlock[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+// Bloqueo personal de un staff: rango de tiempo en que NO atiende.
+// Útil para vacaciones individuales, citas médicas, etc., sin afectar a los demás.
+model StaffBlock {
+  id        String   @id @default(cuid())
+  staffId   String
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  startAt   DateTime
+  endAt     DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([staffId, startAt])
+}
+
+// Inventario de productos del spa (no servicios; productos físicos para venta o uso interno)
+model Product {
+  id           String   @id @default(cuid())
+  name         String
+  sku          String?  @unique
+  description  String?
+  stock        Int      @default(0)
+  unit         String?  // "unidad", "ml", "litro", "kg"
+  costCents    Int?     // costo de adquisición (para margen)
+  priceCents   Int?     // precio de venta al cliente (null = no se vende, solo uso interno)
+  lowStockAlert Int     @default(5) // genera aviso si stock <= alerta
+  imageUrl     String?
+  active       Boolean  @default(true)
+  movements    ProductMovement[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active])
+}
+
+// Historial de movimientos de stock (entrada/salida/ajuste)
+model ProductMovement {
+  id         String              @id @default(cuid())
+  productId  String
+  product    Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type       ProductMovementType
+  quantity   Int                 // siempre positivo; "type" indica signo
+  unitCostCents Int?
+  note       String?
+  createdAt  DateTime            @default(now())
+
+  @@index([productId, createdAt])
+}
+
+enum ProductMovementType {
+  IN          // entrada (compra, devolución de proveedor)
+  OUT         // salida (uso interno, venta)
+  ADJUSTMENT  // ajuste manual (inventario físico)
 }
 
 model Booking {

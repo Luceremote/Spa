@@ -105,6 +105,16 @@ async function validateStaffAvailability(
   if (startMin < staff.workingFrom || endMin > staff.workingTo) {
     throw new HttpError(400, "El profesional no atiende a esa hora");
   }
+  // Bloqueos personales del staff (vacaciones, citas médicas, etc.)
+  const block = await prisma.staffBlock.findFirst({
+    where: {
+      staffId,
+      AND: [{ startAt: { lt: endAt } }, { endAt: { gt: startAt } }],
+    },
+  });
+  if (block) {
+    throw new HttpError(400, `El profesional no está disponible (${block.reason ?? "bloqueado"})`);
+  }
 }
 
 const createBookingSchema = z.object({
