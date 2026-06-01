@@ -54,7 +54,7 @@ export default function PackagesAdminPage() {
         api<{ purchases: PackagePurchase[] }>("/packages/purchases", {
           token: getToken() ?? undefined,
         }),
-        api<{ services: Service[] }>("/services?activeOnly=true"),
+        api<{ services: Service[] }>("/services"),
       ]);
       setPackages(pk.packages);
       setPurchases(pu.purchases);

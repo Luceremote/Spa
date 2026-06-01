@@ -19,6 +19,8 @@ const LINKS = [
   { href: "/galeria", label: "Galería" },
   { href: "/resenas", label: "Reseñas" },
   { href: "/gift-cards", label: "Gift Cards" },
+  { href: "/paquetes", label: "Paquetes" },
+  { href: "/membresias", label: "Membresías" },
   { href: "/mis-reservas", label: "Mis reservas" },
   { href: "/contacto", label: "Contacto" },
 ];
