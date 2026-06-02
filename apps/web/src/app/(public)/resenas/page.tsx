@@ -47,6 +47,12 @@ export default async function ResenasPage() {
                     <span className="text-xs text-muted-foreground">{r.serviceName}</span>
                   )}
                 </div>
+                {r.response && (
+                  <div className="mt-3 pl-3 border-l-2 border-primary/40 bg-primary/5 rounded-r p-3">
+                    <p className="text-xs font-semibold text-primary mb-1">Respuesta del spa</p>
+                    <p className="text-sm text-foreground/80">{r.response}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

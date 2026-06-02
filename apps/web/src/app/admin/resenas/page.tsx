@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Eye, EyeOff, Star, Trash2, Quote } from "lucide-react";
+import { Loader2, Eye, EyeOff, Star, Trash2, Quote, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Stars } from "@/components/stars";
 import { api, getToken } from "@/lib/api";
 import { useToast } from "@/components/toast";
@@ -15,6 +16,38 @@ export default function ResenasAdminPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "published" | "featured">("all");
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [savingReply, setSavingReply] = useState(false);
+
+  function startReply(r: Review) {
+    setReplyingId(r.id);
+    setReplyText(r.response ?? "");
+  }
+
+  async function saveReply(r: Review) {
+    const token = getToken();
+    if (!token) return;
+    setSavingReply(true);
+    try {
+      await api(`/reviews/${r.id}`, { token, method: "PUT", json: { response: replyText } });
+      const trimmed = replyText.trim();
+      setReviews((prev) =>
+        prev.map((x) =>
+          x.id === r.id
+            ? { ...x, response: trimmed || null, respondedAt: trimmed ? new Date().toISOString() : null }
+            : x
+        )
+      );
+      setReplyingId(null);
+      setReplyText("");
+      toast(trimmed ? "Respuesta guardada" : "Respuesta eliminada", "success");
+    } catch (e: any) {
+      toast(e.message, "error");
+    } finally {
+      setSavingReply(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -140,7 +173,39 @@ export default function ResenasAdminPage() {
                 {r.authorEmail && (
                   <p className="text-xs text-muted-foreground mb-3">Email: {r.authorEmail}</p>
                 )}
-                <div className="flex gap-2 pt-2 border-t">
+
+                {/* Respuesta del spa */}
+                {replyingId === r.id ? (
+                  <div className="mb-3 space-y-2">
+                    <Textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Escribe una respuesta pública (se muestra bajo la reseña)…"
+                      rows={3}
+                      maxLength={1000}
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => saveReply(r)} disabled={savingReply}>
+                        {savingReply && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                        Guardar respuesta
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setReplyingId(null)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  r.response && (
+                    <div className="mb-3 pl-3 border-l-2 border-primary/40 bg-primary/5 rounded-r p-3">
+                      <p className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1">
+                        Tu respuesta
+                      </p>
+                      <p className="text-sm text-foreground/80">{r.response}</p>
+                    </div>
+                  )
+                )}
+
+                <div className="flex gap-2 pt-2 border-t flex-wrap">
                   {r.published ? (
                     <Button
                       size="sm"
@@ -164,6 +229,12 @@ export default function ResenasAdminPage() {
                     />
                     {r.featured ? "Quitar destacada" : "Destacar"}
                   </Button>
+                  {replyingId !== r.id && (
+                    <Button size="sm" variant="outline" onClick={() => startReply(r)}>
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      {r.response ? "Editar respuesta" : "Responder"}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"

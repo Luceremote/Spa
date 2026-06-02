@@ -483,6 +483,8 @@ model Review {
   serviceName  String?  // qué servicio le dio (texto libre)
   published    Boolean  @default(false) // admin debe aprobar antes de mostrar
   featured     Boolean  @default(false) // destacada (aparece en landing)
+  response     String?  // respuesta pública del spa al cliente
+  respondedAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

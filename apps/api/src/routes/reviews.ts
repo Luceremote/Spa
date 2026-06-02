@@ -23,6 +23,8 @@ reviewsRouter.get("/", async (req, res, next) => {
         comment: true,
         serviceName: true,
         featured: true,
+        response: true,
+        respondedAt: true,
         createdAt: true,
       },
       orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
@@ -75,13 +77,23 @@ reviewsRouter.get("/admin", requireAuth, async (_req, res, next) => {
 const updateSchema = z.object({
   published: z.boolean().optional(),
   featured: z.boolean().optional(),
+  // Respuesta pública del spa. Cadena vacía => quitar respuesta.
+  response: z.string().max(1000).transform((s) => sanitizeText(s, 1000)).optional().nullable(),
 });
 
 reviewsRouter.put("/:id", requireAuth, async (req, res, next) => {
   try {
     const id = String(req.params.id).slice(0, 50);
     const data = updateSchema.parse(req.body);
-    const review = await prisma.review.update({ where: { id }, data });
+    const patch: Record<string, unknown> = {};
+    if (data.published !== undefined) patch.published = data.published;
+    if (data.featured !== undefined) patch.featured = data.featured;
+    if (data.response !== undefined) {
+      const trimmed = (data.response ?? "").trim();
+      patch.response = trimmed || null;
+      patch.respondedAt = trimmed ? new Date() : null;
+    }
+    const review = await prisma.review.update({ where: { id }, data: patch });
     res.json({ review });
   } catch (e) {
     next(e);

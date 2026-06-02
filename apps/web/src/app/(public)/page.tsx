@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, Calendar, CreditCard, MessageSquare, ArrowRight } from "lucide-react";
+import { Sparkles, Calendar, CreditCard, MessageSquare, ArrowRight, Tag, Crown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Hero } from "@/components/landing/hero";
@@ -10,20 +10,26 @@ import {
   fetchTheme,
   fetchPhotos,
   fetchReviews,
+  fetchPackagesPreview,
+  fetchTiersPreview,
 } from "@/lib/server-fetch";
 import { Stars } from "@/components/stars";
 import { formatMoney } from "@/lib/utils";
 import type { Service, Category, Photo, Review } from "@/lib/types";
 
 export default async function HomePage() {
-  const [services, config, categories, theme, photos, reviews] = await Promise.all([
+  const [services, config, categories, theme, photos, reviews, packages, tiers] = await Promise.all([
     fetchServices(),
     fetchSiteConfig(),
     fetchCategories(),
     fetchTheme(),
     fetchPhotos(),
     fetchReviews({ featured: true, limit: 6 }),
+    fetchPackagesPreview(),
+    fetchTiersPreview(),
   ]);
+  const topPackages = packages.slice(0, 3);
+  const topTiers = tiers.slice(0, 3);
   const featured: Service[] = services.filter((s: Service) => s.featured).slice(0, 3);
   const galleryPreview: Photo[] = photos.slice(0, 6);
   const topReviews: Review[] = reviews.slice(0, 3);
@@ -122,6 +128,75 @@ export default async function HomePage() {
                 </Link>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* PAQUETES Y MEMBRESÍAS */}
+      {(topPackages.length > 0 || topTiers.length > 0) && (
+        <section className="container py-16">
+          <div className="text-center mb-8 sm:mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3">Ahorra más</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Compra paquetes de sesiones o únete a nuestro club con descuentos permanentes
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            {topPackages.length > 0 && (
+              <Card className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Tag className="h-5 w-5 text-primary" />
+                    <h3 className="text-xl font-bold">Paquetes</h3>
+                  </div>
+                  <ul className="space-y-3 mb-5">
+                    {topPackages.map((p: any) => (
+                      <li key={p.id} className="flex items-center justify-between text-sm">
+                        <span>
+                          <span className="font-medium">{p.name}</span>
+                          <span className="text-muted-foreground"> · {p.sessions} sesiones</span>
+                        </span>
+                        <span className="font-semibold text-primary">
+                          {formatMoney(p.priceCents)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button asChild className="w-full">
+                    <Link href="/paquetes">Ver paquetes</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {topTiers.length > 0 && (
+              <Card className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Crown className="h-5 w-5 text-primary" />
+                    <h3 className="text-xl font-bold">Membresías</h3>
+                  </div>
+                  <ul className="space-y-3 mb-5">
+                    {topTiers.map((t: any) => (
+                      <li key={t.id} className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-1.5">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="font-medium">{t.name}</span>
+                          <span className="text-muted-foreground">
+                            · {t.discountPercent}% dto.
+                          </span>
+                        </span>
+                        <span className="font-semibold text-primary">
+                          {formatMoney(t.monthlyPriceCents)}/mes
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button asChild className="w-full">
+                    <Link href="/membresias">Conocer el club</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </section>
       )}

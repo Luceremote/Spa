@@ -135,6 +135,26 @@ export async function fetchPopup(): Promise<any | null> {
   }
 }
 
+export async function fetchPackagesPreview(): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_URL}/packages`, { next: { revalidate: 120 } });
+    if (!res.ok) return [];
+    return (await res.json()).packages ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchTiersPreview(): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_URL}/memberships/tiers`, { next: { revalidate: 120 } });
+    if (!res.ok) return [];
+    return (await res.json()).tiers ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchReviews(opts: { featured?: boolean; limit?: number } = {}): Promise<any[]> {
   try {
     const q = new URLSearchParams();
