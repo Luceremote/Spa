@@ -38,6 +38,9 @@ jobs:
   prisma-validate:
     name: Validate Prisma schema
     runs-on: ubuntu-latest
+    env:
+      # prisma validate resuelve env("DATABASE_URL") aunque no conecta a la DB.
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/db?schema=public"
     steps:
       - uses: actions/checkout@v4
 
@@ -72,6 +75,6 @@ jobs:
         with:
           node-version: "20"
       - name: Install
-        run: cd apps/mobile && npm ci
+        run: cd apps/mobile && npm install --no-audit --no-fund
       - name: Typecheck
         run: cd apps/mobile && npx tsc --noEmit
