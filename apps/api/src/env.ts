@@ -44,6 +44,14 @@ const schema = z.object({
   // Sentry: si está definido, captura errores y trazas
   SENTRY_DSN: z.string().default(""),
   SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0.1),
+  // WhatsApp Cloud API (Meta). Si faltan, el envío es no-op.
+  WHATSAPP_PHONE_NUMBER_ID: z.string().default(""),
+  WHATSAPP_ACCESS_TOKEN: z.string().default(""),
+  // Plantilla aprobada para recordatorios de cita (Meta exige plantilla para
+  // mensajes iniciados por el negocio). Debe tener parámetros de cuerpo en orden:
+  // {{1}}=nombre, {{2}}=servicio, {{3}}=fecha/hora.
+  WHATSAPP_REMINDER_TEMPLATE: z.string().default(""),
+  WHATSAPP_TEMPLATE_LANG: z.string().default("es"),
 });
 
 const parsed = schema.safeParse(process.env);

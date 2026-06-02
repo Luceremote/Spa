@@ -6,6 +6,7 @@ import { sendPush } from "./push.js";
 import { sendMail, bookingReminderEmail } from "./mail.js";
 import { processRecurringTransactions } from "./finances-helpers.js";
 import { sendFollowupBatch } from "./followup-helpers.js";
+import { sendWhatsAppTemplate, whatsAppEnabled } from "./whatsapp.js";
 
 let started = false;
 
@@ -62,38 +63,57 @@ export function startCron() {
       const windowStart = new Date(now.getTime() + 23 * 60 * 60_000);
       const windowEnd = new Date(now.getTime() + 25 * 60 * 60_000);
 
+      // Sin filtro de email: WhatsApp puede alcanzar a quienes no dieron email.
       const bookings = await prisma.booking.findMany({
         where: {
           status: { in: ["PENDING", "CONFIRMED"] },
           emailReminderSentAt: null,
           startAt: { gte: windowStart, lte: windowEnd },
-          customer: { email: { not: null } },
         },
         include: { customer: true, service: true },
       });
 
       if (bookings.length === 0) return;
-      console.log(`[cron] email recordatorios: ${bookings.length} reserva(s)`);
+      const waOn = whatsAppEnabled();
+      console.log(`[cron] recordatorios 24h: ${bookings.length} reserva(s) (whatsapp=${waOn})`);
 
       const cfg = await prisma.siteConfig.findUnique({ where: { id: "singleton" } });
       const spaName = cfg?.spaName ?? "Spa";
 
       for (const b of bookings) {
-        if (!b.customer.email) continue;
-        try {
-          const m = bookingReminderEmail({
-            spaName,
-            customerName: b.customer.name,
-            customerEmail: b.customer.email,
-            customerPhone: b.customer.phone,
-            serviceName: b.service.name,
-            startAtISO: b.startAt.toISOString(),
-            priceCents: b.priceCents,
-            bookingId: b.id,
-          });
-          await sendMail({ to: b.customer.email, ...m });
-        } catch (e) {
-          console.error("[cron] email recordatorio falló:", e);
+        // Email (si tiene)
+        if (b.customer.email) {
+          try {
+            const m = bookingReminderEmail({
+              spaName,
+              customerName: b.customer.name,
+              customerEmail: b.customer.email,
+              customerPhone: b.customer.phone,
+              serviceName: b.service.name,
+              startAtISO: b.startAt.toISOString(),
+              priceCents: b.priceCents,
+              bookingId: b.id,
+            });
+            await sendMail({ to: b.customer.email, ...m });
+          } catch (e) {
+            console.error("[cron] email recordatorio falló:", e);
+          }
+        }
+        // WhatsApp (plantilla aprobada): {{1}}=nombre, {{2}}=servicio, {{3}}=fecha/hora
+        if (waOn) {
+          try {
+            const when = new Intl.DateTimeFormat("es-US", {
+              dateStyle: "full",
+              timeStyle: "short",
+            }).format(b.startAt);
+            await sendWhatsAppTemplate({
+              to: b.customer.phone,
+              template: env.WHATSAPP_REMINDER_TEMPLATE,
+              params: [b.customer.name, b.service.name, when],
+            });
+          } catch (e) {
+            console.error("[cron] whatsapp recordatorio falló:", e);
+          }
         }
         await prisma.booking.update({
           where: { id: b.id },
