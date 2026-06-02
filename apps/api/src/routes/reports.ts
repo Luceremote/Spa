@@ -17,6 +17,58 @@ reportsRouter.post("/followup/send", requireAuth, async (_req, res, next) => {
   }
 });
 
+// Caja del día: dinero cobrado en una fecha, desglosado por método de pago.
+const dayQuery = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+reportsRouter.get("/cash", requireAuth, async (req, res, next) => {
+  try {
+    const { date } = dayQuery.parse(req.query);
+    const base = date ? new Date(`${date}T00:00:00`) : new Date();
+    const dayStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0);
+    const dayEnd = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
+
+    const [byMethod, bookingsToday, completedToday, txAgg] = await Promise.all([
+      prisma.payment.groupBy({
+        by: ["method"],
+        where: { status: "PAID", paidAt: { gte: dayStart, lte: dayEnd } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      prisma.booking.count({ where: { startAt: { gte: dayStart, lte: dayEnd } } }),
+      prisma.booking.count({
+        where: { startAt: { gte: dayStart, lte: dayEnd }, status: "COMPLETED" },
+      }),
+      prisma.transaction.groupBy({
+        by: ["type"],
+        where: { date: { gte: dayStart, lte: dayEnd } },
+        _sum: { amountCents: true },
+      }),
+    ]);
+
+    const methods = byMethod.map((m) => ({
+      method: m.method,
+      totalCents: m._sum.amountCents ?? 0,
+      count: m._count,
+    }));
+    const collectedCents = methods.reduce((s, m) => s + m.totalCents, 0);
+    const incomeCents = txAgg.find((t) => t.type === "INCOME")?._sum.amountCents ?? 0;
+    const expenseCents = txAgg.find((t) => t.type === "EXPENSE")?._sum.amountCents ?? 0;
+
+    res.json({
+      date: dayStart.toISOString().slice(0, 10),
+      collectedCents, // suma de pagos cobrados ese día
+      methods, // desglose por método de pago
+      bookingsToday,
+      completedToday,
+      finance: { incomeCents, expenseCents, balanceCents: incomeCents - expenseCents },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 const monthlyQuery = z.object({
   year: z.coerce.number().int().min(2000).max(2100),
   month: z.coerce.number().int().min(1).max(12), // 1-12

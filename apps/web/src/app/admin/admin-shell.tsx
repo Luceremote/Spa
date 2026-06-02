@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Calendar,
+  CalendarDays,
   Sparkles,
   Users,
   Palette,
@@ -35,6 +36,7 @@ import {
   BarChart3,
   UserMinus,
   Navigation,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, getToken, setToken } from "@/lib/api";
@@ -44,6 +46,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/calendario", label: "Calendario", icon: Calendar },
+  { href: "/admin/agenda", label: "Agenda semanal", icon: CalendarDays },
   { href: "/admin/servicios", label: "Servicios", icon: Sparkles },
   { href: "/admin/categorias", label: "Categorías", icon: FolderTree },
   { href: "/admin/staff", label: "Profesionales", icon: UserCog },
@@ -53,6 +56,7 @@ const NAV = [
   { href: "/admin/lista-espera", label: "Lista de espera", icon: BellRing },
   { href: "/admin/inventario", label: "Inventario", icon: Package },
   { href: "/admin/finanzas", label: "Finanzas", icon: Wallet },
+  { href: "/admin/caja", label: "Caja del día", icon: Banknote },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/paquetes", label: "Paquetes", icon: Tag },
   { href: "/admin/membresias", label: "Membresías", icon: Crown },
