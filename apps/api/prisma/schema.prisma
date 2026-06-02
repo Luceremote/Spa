@@ -41,8 +41,8 @@ enum PaymentMethod {
 }
 
 enum CouponType {
-  PERCENT     // descuento en porcentaje
-  FIXED       // descuento de monto fijo (centavos)
+  PERCENT // descuento en porcentaje
+  FIXED // descuento de monto fijo (centavos)
 }
 
 enum TxType {
@@ -65,50 +65,50 @@ enum RecurFrequency {
 }
 
 enum GiftCardStatus {
-  PENDING_PAYMENT  // creada, esperando que Stripe confirme el pago
-  ACTIVE           // pagada, con saldo disponible
-  USED_UP          // saldo agotado
+  PENDING_PAYMENT // creada, esperando que Stripe confirme el pago
+  ACTIVE // pagada, con saldo disponible
+  USED_UP // saldo agotado
   EXPIRED
   REFUNDED
   CANCELLED
 }
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  passwordHash    String
-  name            String
-  role            Role      @default(ADMIN)
-  failedLoginAttempts Int   @default(0)
-  lockedUntil     DateTime?
-  lastLoginAt     DateTime?
-  lastLoginIp     String?
-  tokenVersion    Int       @default(0)
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String
+  name                String
+  role                Role      @default(ADMIN)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  tokenVersion        Int       @default(0)
   // 2FA TOTP
-  totpEnabled     Boolean   @default(false)
-  totpSecret      String?
-  recoveryCodes   String[]  @default([]) // hashes de códigos de respaldo de un solo uso
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  totpEnabled         Boolean   @default(false)
+  totpSecret          String?
+  recoveryCodes       String[]  @default([]) // hashes de códigos de respaldo de un solo uso
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model Customer {
-  id        String    @id @default(cuid())
-  name      String
-  email     String?
-  phone     String
-  notes     String?   // notas del cliente sobre sí mismo (alergias indicadas al reservar)
-  privateNotes String? // notas privadas del admin (no visibles al cliente)
-  bookings  Booking[]
-  pushTokens PushToken[]
-  loyaltyAccount LoyaltyAccount?
-  packagePurchases PackagePurchase[] @relation("CustomerPackages")
-  membership CustomerMembership? @relation("CustomerMembership")
-  waitlistEntries WaitlistEntry[] @relation("CustomerWaitlist")
+  id               String              @id @default(cuid())
+  name             String
+  email            String?
+  phone            String
+  notes            String? // notas del cliente sobre sí mismo (alergias indicadas al reservar)
+  privateNotes     String? // notas privadas del admin (no visibles al cliente)
+  bookings         Booking[]
+  pushTokens       PushToken[]
+  loyaltyAccount   LoyaltyAccount?
+  packagePurchases PackagePurchase[]   @relation("CustomerPackages")
+  membership       CustomerMembership? @relation("CustomerMembership")
+  waitlistEntries  WaitlistEntry[]     @relation("CustomerWaitlist")
   // Última vez que se le envió un email de "te extrañamos" (para no spammear)
-  lastFollowupAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  lastFollowupAt   DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   @@index([phone])
   @@index([email])
@@ -126,23 +126,23 @@ model Category {
 }
 
 model Service {
-  id              String    @id @default(cuid())
+  id              String           @id @default(cuid())
   name            String
-  slug            String    @unique
+  slug            String           @unique
   description     String
   priceCents      Int
   durationMinutes Int
   imageUrl        String?
-  active          Boolean   @default(true)
-  featured        Boolean   @default(false)
+  active          Boolean          @default(true)
+  featured        Boolean          @default(false)
   categoryId      String?
-  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  staff           Staff[]   @relation("StaffServices")
+  category        Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  staff           Staff[]          @relation("StaffServices")
   bookings        Booking[]
   packages        ServicePackage[] @relation("ServicePackages")
   waitlist        WaitlistEntry[]  @relation("ServiceWaitlist")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([active])
   @@index([categoryId])
@@ -150,26 +150,26 @@ model Service {
 
 // Profesional / terapeuta / colaborador. Permite asignar una reserva a una persona específica.
 model Staff {
-  id           String    @id @default(cuid())
-  name         String
-  email        String?
-  phone        String?
-  bio          String?
-  avatarUrl    String?
-  active       Boolean   @default(true)
+  id                String       @id @default(cuid())
+  name              String
+  email             String?
+  phone             String?
+  bio               String?
+  avatarUrl         String?
+  active            Boolean      @default(true)
   // Disponibilidad: bitmask de días (0=Dom .. 6=Sáb). Ej. [1,2,3,4,5] = lunes-viernes
-  workingDays  Int[]     @default([1, 2, 3, 4, 5, 6])
+  workingDays       Int[]        @default([1, 2, 3, 4, 5, 6])
   // Hora de inicio/fin en minutos desde medianoche (e.g. 540 = 9:00, 1140 = 19:00)
-  workingFrom  Int       @default(540)
-  workingTo    Int       @default(1140)
+  workingFrom       Int          @default(540)
+  workingTo         Int          @default(1140)
   // Comisión: % sobre el precio del servicio (0-100). 0 = sin comisión, sueldo fijo aparte.
-  commissionPercent Float @default(0)
+  commissionPercent Float        @default(0)
   // Servicios que puede realizar (si vacío => todos)
-  services     Service[] @relation("StaffServices")
-  bookings     Booking[]
-  blocks       StaffBlock[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  services          Service[]    @relation("StaffServices")
+  bookings          Booking[]
+  blocks            StaffBlock[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 }
 
 // Bloqueo personal de un staff: rango de tiempo en que NO atiende.
@@ -188,42 +188,42 @@ model StaffBlock {
 
 // Inventario de productos del spa (no servicios; productos físicos para venta o uso interno)
 model Product {
-  id           String   @id @default(cuid())
-  name         String
-  sku          String?  @unique
-  description  String?
-  stock        Int      @default(0)
-  unit         String?  // "unidad", "ml", "litro", "kg"
-  costCents    Int?     // costo de adquisición (para margen)
-  priceCents   Int?     // precio de venta al cliente (null = no se vende, solo uso interno)
-  lowStockAlert Int     @default(5) // genera aviso si stock <= alerta
-  imageUrl     String?
-  active       Boolean  @default(true)
-  movements    ProductMovement[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String            @id @default(cuid())
+  name          String
+  sku           String?           @unique
+  description   String?
+  stock         Int               @default(0)
+  unit          String? // "unidad", "ml", "litro", "kg"
+  costCents     Int? // costo de adquisición (para margen)
+  priceCents    Int? // precio de venta al cliente (null = no se vende, solo uso interno)
+  lowStockAlert Int               @default(5) // genera aviso si stock <= alerta
+  imageUrl      String?
+  active        Boolean           @default(true)
+  movements     ProductMovement[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@index([active])
 }
 
 // Historial de movimientos de stock (entrada/salida/ajuste)
 model ProductMovement {
-  id         String              @id @default(cuid())
-  productId  String
-  product    Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
-  type       ProductMovementType
-  quantity   Int                 // siempre positivo; "type" indica signo
+  id            String              @id @default(cuid())
+  productId     String
+  product       Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type          ProductMovementType
+  quantity      Int // siempre positivo; "type" indica signo
   unitCostCents Int?
-  note       String?
-  createdAt  DateTime            @default(now())
+  note          String?
+  createdAt     DateTime            @default(now())
 
   @@index([productId, createdAt])
 }
 
 enum ProductMovementType {
-  IN          // entrada (compra, devolución de proveedor)
-  OUT         // salida (uso interno, venta)
-  ADJUSTMENT  // ajuste manual (inventario físico)
+  IN // entrada (compra, devolución de proveedor)
+  OUT // salida (uso interno, venta)
+  ADJUSTMENT // ajuste manual (inventario físico)
 }
 
 // ─── MARKETING ────────────────────────────────────────────
@@ -236,27 +236,27 @@ enum CampaignStatus {
 
 // Campaña de email a suscriptores (broadcast)
 model EmailCampaign {
-  id           String         @id @default(cuid())
-  subject      String
-  htmlBody     String         // HTML completo del email
-  preheader    String?        // preview text
-  status       CampaignStatus @default(DRAFT)
-  sentAt       DateTime?
-  recipientCount Int          @default(0)
-  successCount   Int          @default(0)
-  failedCount    Int          @default(0)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  subject        String
+  htmlBody       String // HTML completo del email
+  preheader      String? // preview text
+  status         CampaignStatus @default(DRAFT)
+  sentAt         DateTime?
+  recipientCount Int            @default(0)
+  successCount   Int            @default(0)
+  failedCount    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 // Banner promocional configurable en home (singleton)
 model PromoBanner {
   id          String   @id @default("singleton")
   active      Boolean  @default(false)
-  text        String   @default("")        // texto del banner
-  ctaLabel    String?  // ej. "Reservar"
-  ctaUrl      String?  // ej. "/reservar"
-  bgColor     String   @default("340 75% 55%")   // HSL
+  text        String   @default("") // texto del banner
+  ctaLabel    String? // ej. "Reservar"
+  ctaUrl      String? // ej. "/reservar"
+  bgColor     String   @default("340 75% 55%") // HSL
   textColor   String   @default("0 0% 100%")
   dismissible Boolean  @default(true)
   updatedAt   DateTime @updatedAt
@@ -264,29 +264,29 @@ model PromoBanner {
 
 // Pop-up de descuento para visitantes nuevos (singleton)
 model PromoPopup {
-  id          String   @id @default("singleton")
-  active      Boolean  @default(false)
-  title       String   @default("¡Bienvenido!")
-  body        String   @default("10% de descuento en tu primera reserva")
-  ctaLabel    String   @default("Quiero el descuento")
-  ctaUrl      String   @default("/reservar")
-  imageUrl    String?
-  showAfterSec Int     @default(5)         // segundos antes de mostrar
-  showOncePerDays Int  @default(7)         // no repetir antes de N días
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default("singleton")
+  active          Boolean  @default(false)
+  title           String   @default("¡Bienvenido!")
+  body            String   @default("10% de descuento en tu primera reserva")
+  ctaLabel        String   @default("Quiero el descuento")
+  ctaUrl          String   @default("/reservar")
+  imageUrl        String?
+  showAfterSec    Int      @default(5) // segundos antes de mostrar
+  showOncePerDays Int      @default(7) // no repetir antes de N días
+  updatedAt       DateTime @updatedAt
 }
 
 // Programa de lealtad: puntos acumulables y canjeables
 model LoyaltyAccount {
-  id          String              @id @default(cuid())
-  customerId  String              @unique
-  customer    Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  id            String            @id @default(cuid())
+  customerId    String            @unique
+  customer      Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
   pointsBalance Int               @default(0)
-  totalEarned Int                 @default(0)
+  totalEarned   Int               @default(0)
   totalRedeemed Int               @default(0)
-  movements   LoyaltyMovement[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  movements     LoyaltyMovement[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@index([pointsBalance])
 }
@@ -299,14 +299,14 @@ enum LoyaltyMovementType {
 }
 
 model LoyaltyMovement {
-  id         String              @id @default(cuid())
-  accountId  String
-  account    LoyaltyAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  type       LoyaltyMovementType
-  points     Int                 // positivo siempre; type indica signo
-  bookingId  String?             // si fue por una reserva
-  note       String?
-  createdAt  DateTime            @default(now())
+  id        String              @id @default(cuid())
+  accountId String
+  account   LoyaltyAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type      LoyaltyMovementType
+  points    Int // positivo siempre; type indica signo
+  bookingId String? // si fue por una reserva
+  note      String?
+  createdAt DateTime            @default(now())
 
   @@index([accountId, createdAt])
 }
@@ -315,37 +315,37 @@ model LoyaltyMovement {
 model LoyaltySettings {
   id              String   @id @default("singleton")
   active          Boolean  @default(false)
-  pointsPerDollar Float    @default(1.0)    // 1 punto por cada $1 gastado
-  pointValueCents Int      @default(1)      // 1 punto = $0.01 al canjear
-  minRedeemPoints Int      @default(500)    // mínimo para canjear
+  pointsPerDollar Float    @default(1.0) // 1 punto por cada $1 gastado
+  pointValueCents Int      @default(1) // 1 punto = $0.01 al canjear
+  minRedeemPoints Int      @default(500) // mínimo para canjear
   updatedAt       DateTime @updatedAt
 }
 
 model Booking {
-  id          String        @id @default(cuid())
-  customerId  String
-  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  serviceId   String
-  service     Service       @relation(fields: [serviceId], references: [id])
-  staffId     String?
-  staff       Staff?        @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  startAt     DateTime
-  endAt       DateTime
-  status      BookingStatus @default(PENDING)
-  priceCents      Int       // monto final a cobrar (después de descuento)
-  basePriceCents  Int       // precio del servicio antes de cupón/gift card
-  discountCents   Int       @default(0)
-  couponId        String?
-  coupon          Coupon?   @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  redemptions     GiftCardRedemption[]
-  packageRedemption PackageRedemption?
-  notes       String?
-  reminderSentAt        DateTime? // push reminder (~1h antes)
-  emailReminderSentAt   DateTime? // email reminder (~24h antes)
-  surveySentAt          DateTime? // email post-servicio (encuesta/reseña)
-  payment     Payment?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                  String               @id @default(cuid())
+  customerId          String
+  customer            Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId           String
+  service             Service              @relation(fields: [serviceId], references: [id])
+  staffId             String?
+  staff               Staff?               @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  startAt             DateTime
+  endAt               DateTime
+  status              BookingStatus        @default(PENDING)
+  priceCents          Int // monto final a cobrar (después de descuento)
+  basePriceCents      Int // precio del servicio antes de cupón/gift card
+  discountCents       Int                  @default(0)
+  couponId            String?
+  coupon              Coupon?              @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  redemptions         GiftCardRedemption[]
+  packageRedemption   PackageRedemption?
+  notes               String?
+  reminderSentAt      DateTime? // push reminder (~1h antes)
+  emailReminderSentAt DateTime? // email reminder (~24h antes)
+  surveySentAt        DateTime? // email post-servicio (encuesta/reseña)
+  payment             Payment?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([startAt])
   @@index([status])
@@ -378,9 +378,9 @@ model Coupon {
   value         Int
   active        Boolean    @default(true)
   expiresAt     DateTime?
-  maxUses       Int?       // límite total de usos (null = ilimitado)
+  maxUses       Int? // límite total de usos (null = ilimitado)
   usedCount     Int        @default(0)
-  minPriceCents Int?       // monto mínimo para aplicarlo
+  minPriceCents Int? // monto mínimo para aplicarlo
   bookings      Booking[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -390,29 +390,29 @@ model Coupon {
 
 // Gift Cards / tarjetas de regalo (con saldo prepagado)
 model GiftCard {
-  id                String         @id @default(cuid())
+  id                    String               @id @default(cuid())
   // Código único que el destinatario usa al reservar (mostrado al comprador)
-  code              String         @unique
-  initialCents      Int            // valor cargado al comprar
-  balanceCents      Int            // saldo restante actual
-  currency          String         @default("usd")
-  status            GiftCardStatus @default(PENDING_PAYMENT)
+  code                  String               @unique
+  initialCents          Int // valor cargado al comprar
+  balanceCents          Int // saldo restante actual
+  currency              String               @default("usd")
+  status                GiftCardStatus       @default(PENDING_PAYMENT)
   // Datos del comprador (quien paga)
-  purchaserName     String
-  purchaserEmail    String
+  purchaserName         String
+  purchaserEmail        String
   // Datos del destinatario (puede ser el mismo comprador o un regalo)
-  recipientName     String?
-  recipientEmail    String?
+  recipientName         String?
+  recipientEmail        String?
   // Mensaje personalizado del comprador para el destinatario
-  message           String?
+  message               String?
   // Pago vía Stripe Checkout
-  stripeSessionId       String?    @unique
-  stripePaymentIntentId String?    @unique
+  stripeSessionId       String?              @unique
+  stripePaymentIntentId String?              @unique
   paidAt                DateTime?
-  expiresAt             DateTime?  // null = no expira
+  expiresAt             DateTime? // null = no expira
   redemptions           GiftCardRedemption[]
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
 
   @@index([status])
   @@index([purchaserEmail])
@@ -421,13 +421,13 @@ model GiftCard {
 
 // Cada vez que una gift card se usa en una reserva, se registra aquí
 model GiftCardRedemption {
-  id           String   @id @default(cuid())
-  giftCardId   String
-  giftCard     GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
-  bookingId    String
-  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  amountCents  Int      // cuánto se descontó del saldo
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  giftCardId  String
+  giftCard    GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amountCents Int // cuánto se descontó del saldo
+  createdAt   DateTime @default(now())
 
   @@index([giftCardId])
   @@index([bookingId])
@@ -442,82 +442,82 @@ model ClosedDate {
 }
 
 model SiteConfig {
-  id            String   @id @default("singleton")
-  spaName       String   @default("Mi Spa")
-  tagline       String   @default("Relájate, eres bienvenido")
-  logoUrl       String?
-  heroImageUrl  String?
-  whatsappPhone String   @default("15555555555")
-  whatsappMsg   String   @default("Hola, me gustaría reservar un servicio")
-  callPhone     String?  // teléfono separado para llamar (puede ser distinto del WhatsApp)
-  email         String?
-  address       String?
-  googleMapsUrl String?  // URL embed o de búsqueda en Google Maps
-  openingHours  String?  // resumen legible: "Lun-Sáb 9:00-19:00"
+  id                 String   @id @default("singleton")
+  spaName            String   @default("Mi Spa")
+  tagline            String   @default("Relájate, eres bienvenido")
+  logoUrl            String?
+  heroImageUrl       String?
+  whatsappPhone      String   @default("15555555555")
+  whatsappMsg        String   @default("Hola, me gustaría reservar un servicio")
+  callPhone          String? // teléfono separado para llamar (puede ser distinto del WhatsApp)
+  email              String?
+  address            String?
+  googleMapsUrl      String? // URL embed o de búsqueda en Google Maps
+  openingHours       String? // resumen legible: "Lun-Sáb 9:00-19:00"
   // Horarios desglosados (JSON con keys mon, tue, wed, thu, fri, sat, sun → "10:00-19:00" o "Cerrado")
-  hoursByDay    Json?
+  hoursByDay         Json?
   // Bio / sobre nosotros
-  aboutTitle    String?
-  aboutText     String?  // párrafo largo, puede tener múltiples líneas
-  aboutImageUrl String?
+  aboutTitle         String?
+  aboutText          String? // párrafo largo, puede tener múltiples líneas
+  aboutImageUrl      String?
   // Redes sociales (URLs completas)
-  instagramUrl  String?
-  facebookUrl   String?
-  tiktokUrl     String?
-  twitterUrl    String?
-  youtubeUrl    String?
+  instagramUrl       String?
+  facebookUrl        String?
+  tiktokUrl          String?
+  twitterUrl         String?
+  youtubeUrl         String?
   // Políticas (texto largo, formato markdown opcional)
   cancellationPolicy String?
   privacyPolicy      String?
   termsOfService     String?
   // Activa métodos de pago "Compra ahora, paga después" en Stripe Checkout (Klarna/Afterpay/Affirm)
-  enableBnpl    Boolean  @default(false)
+  enableBnpl         Boolean  @default(false)
   // Links del navbar público: array de {href, label, visible, order}. Si null/vacío, usa default.
-  navLinks      Json?
-  updatedAt     DateTime @updatedAt
+  navLinks           Json?
+  updatedAt          DateTime @updatedAt
 }
 
 // Reseñas / testimonios de clientes
 model Review {
-  id           String   @id @default(cuid())
-  authorName   String
-  authorEmail  String?  // opcional, no se muestra públicamente
-  rating       Int      // 1-5 estrellas
-  comment      String
-  serviceName  String?  // qué servicio le dio (texto libre)
-  published    Boolean  @default(false) // admin debe aprobar antes de mostrar
-  featured     Boolean  @default(false) // destacada (aparece en landing)
-  photoUrl     String?  // foto opcional subida por el cliente (moderada antes de publicarse)
-  response     String?  // respuesta pública del spa al cliente
-  respondedAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String    @id @default(cuid())
+  authorName  String
+  authorEmail String? // opcional, no se muestra públicamente
+  rating      Int // 1-5 estrellas
+  comment     String
+  serviceName String? // qué servicio le dio (texto libre)
+  published   Boolean   @default(false) // admin debe aprobar antes de mostrar
+  featured    Boolean   @default(false) // destacada (aparece en landing)
+  photoUrl    String? // foto opcional subida por el cliente (moderada antes de publicarse)
+  response    String? // respuesta pública del spa al cliente
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([published, featured, createdAt])
 }
 
 // Suscriptores al newsletter / promos
 model Subscriber {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String?
-  source      String?  // "footer", "checkout", etc
-  active      Boolean  @default(true)
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  source         String? // "footer", "checkout", etc
+  active         Boolean   @default(true)
   unsubscribedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   @@index([active])
 }
 
 // Fotos de la galería pública del spa
 model Photo {
-  id          String   @id @default(cuid())
-  url         String
-  caption     String?
-  order       Int      @default(0)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  url       String
+  caption   String?
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([active, order])
 }
@@ -530,7 +530,7 @@ model Theme {
   colorBackground String   @default("30 40% 98%")
   colorForeground String   @default("220 15% 20%")
   colorMuted      String   @default("30 20% 92%")
-  colorHeader     String   @default("30 40% 98%")   // color de la barra superior (navbar)
+  colorHeader     String   @default("30 40% 98%") // color de la barra superior (navbar)
   borderRadius    String   @default("0.75rem")
   cardPadding     String   @default("1.5rem")
   containerWidth  String   @default("1200px")
@@ -542,29 +542,29 @@ model Theme {
 
 // Tokens de Expo Push (cliente opta por recibir notificaciones)
 model PushToken {
-  id         String   @id @default(cuid())
-  token      String   @unique
+  id         String    @id @default(cuid())
+  token      String    @unique
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  platform   String?  // "ios" | "android"
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  platform   String? // "ios" | "android"
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([customerId])
 }
 
 // ─── FINANZAS / CARTERA ───────────────────────────────────
 model FinanceCategory {
-  id             String   @id @default(cuid())
-  name           String
-  type           TxType
-  color          String?  // hex para gráficas (#xxxxxx)
-  icon           String?  // ej: "home", "shopping-cart"
-  isDefault      Boolean  @default(false)
-  transactions   Transaction[]
-  recurrings     RecurringTransaction[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String                 @id @default(cuid())
+  name         String
+  type         TxType
+  color        String? // hex para gráficas (#xxxxxx)
+  icon         String? // ej: "home", "shopping-cart"
+  isDefault    Boolean                @default(false)
+  transactions Transaction[]
+  recurrings   RecurringTransaction[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 
   @@unique([name, type])
 }
@@ -573,15 +573,15 @@ model Transaction {
   id          String           @id @default(cuid())
   type        TxType
   source      TxSource         @default(MANUAL)
-  amountCents Int              // siempre positivo; el "type" determina signo
-  date        DateTime         // fecha contable (puede ser distinta del createdAt)
+  amountCents Int // siempre positivo; el "type" determina signo
+  date        DateTime // fecha contable (puede ser distinta del createdAt)
   description String?
   note        String?
   categoryId  String?
   category    FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  bookingId   String?          // si vino de una reserva
-  giftCardId  String?          // si vino de una gift card
-  receiptUrl  String?          // foto/PDF de factura/recibo
+  bookingId   String? // si vino de una reserva
+  giftCardId  String? // si vino de una gift card
+  receiptUrl  String? // foto/PDF de factura/recibo
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -592,21 +592,21 @@ model Transaction {
 }
 
 model RecurringTransaction {
-  id           String           @id @default(cuid())
-  name         String           // ej. "Arriendo local"
-  amountCents  Int
-  type         TxType
-  categoryId   String?
-  category     FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  frequency    RecurFrequency   @default(MONTHLY)
-  dayOfMonth   Int?             // 1-31 para MONTHLY/YEARLY
-  monthOfYear  Int?             // 1-12 para YEARLY
-  weekday      Int?             // 0-6 para WEEKLY
-  active       Boolean          @default(true)
-  nextDueDate  DateTime         // cuándo se genera la próxima Transaction
-  lastRunAt    DateTime?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id          String           @id @default(cuid())
+  name        String // ej. "Arriendo local"
+  amountCents Int
+  type        TxType
+  categoryId  String?
+  category    FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  frequency   RecurFrequency   @default(MONTHLY)
+  dayOfMonth  Int? // 1-31 para MONTHLY/YEARLY
+  monthOfYear Int? // 1-12 para YEARLY
+  weekday     Int? // 0-6 para WEEKLY
+  active      Boolean          @default(true)
+  nextDueDate DateTime // cuándo se genera la próxima Transaction
+  lastRunAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@index([active, nextDueDate])
 }
@@ -622,39 +622,39 @@ enum PackagePurchaseStatus {
 
 // Paquete de N sesiones de un servicio a precio reducido
 model ServicePackage {
-  id            String   @id @default(cuid())
-  serviceId     String
-  service       Service  @relation("ServicePackages", fields: [serviceId], references: [id], onDelete: Cascade)
-  name          String
-  sessions      Int      // cantidad de sesiones incluidas
-  priceCents    Int      // precio total del paquete
-  validityDays  Int      @default(365) // días desde la compra hasta que expira
-  active        Boolean  @default(true)
-  purchases     PackagePurchase[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String            @id @default(cuid())
+  serviceId    String
+  service      Service           @relation("ServicePackages", fields: [serviceId], references: [id], onDelete: Cascade)
+  name         String
+  sessions     Int // cantidad de sesiones incluidas
+  priceCents   Int // precio total del paquete
+  validityDays Int               @default(365) // días desde la compra hasta que expira
+  active       Boolean           @default(true)
+  purchases    PackagePurchase[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([serviceId, active])
 }
 
 // Compra concreta de un paquete por un cliente (lleva el saldo de sesiones)
 model PackagePurchase {
-  id                String                @id @default(cuid())
-  packageId         String
-  package           ServicePackage        @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  customerId        String
-  customer          Customer              @relation("CustomerPackages", fields: [customerId], references: [id], onDelete: Cascade)
-  sessionsTotal     Int                   // copia del paquete (por si cambia después)
-  sessionsRemaining Int
-  status            PackagePurchaseStatus @default(PENDING_PAYMENT)
-  paidCents         Int
-  expiresAt         DateTime
-  stripeSessionId       String? @unique
-  stripePaymentIntentId String? @unique
+  id                    String                @id @default(cuid())
+  packageId             String
+  package               ServicePackage        @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  customerId            String
+  customer              Customer              @relation("CustomerPackages", fields: [customerId], references: [id], onDelete: Cascade)
+  sessionsTotal         Int // copia del paquete (por si cambia después)
+  sessionsRemaining     Int
+  status                PackagePurchaseStatus @default(PENDING_PAYMENT)
+  paidCents             Int
+  expiresAt             DateTime
+  stripeSessionId       String?               @unique
+  stripePaymentIntentId String?               @unique
   paidAt                DateTime?
-  redemptions       PackageRedemption[]
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  redemptions           PackageRedemption[]
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
   @@index([customerId, status])
   @@index([status])
@@ -673,45 +673,45 @@ model PackageRedemption {
 
 // Tier de membresía: configuración (singletons por nombre)
 model MembershipTier {
-  id              String   @id @default(cuid())
-  name            String   @unique         // ej. "Bronce", "Plata", "Oro"
-  description     String?
-  monthlyPriceCents Int                    // precio referencial mensual
-  discountPercent Float                    // descuento que aplica en cada reserva (0-100)
-  perks           String?                  // texto libre con beneficios
-  color           String?                  // hex para badge
-  active          Boolean  @default(true)
-  memberships     CustomerMembership[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String               @id @default(cuid())
+  name              String               @unique // ej. "Bronce", "Plata", "Oro"
+  description       String?
+  monthlyPriceCents Int // precio referencial mensual
+  discountPercent   Float // descuento que aplica en cada reserva (0-100)
+  perks             String? // texto libre con beneficios
+  color             String? // hex para badge
+  active            Boolean              @default(true)
+  memberships       CustomerMembership[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 }
 
 // Membresía actual de un cliente. Puede ser manual (asignada por admin) o
 // vía Stripe Subscription (cobro recurrente automático).
 model CustomerMembership {
-  id          String         @id @default(cuid())
-  customerId  String         @unique
-  customer    Customer       @relation("CustomerMembership", fields: [customerId], references: [id], onDelete: Cascade)
-  tierId      String
-  tier        MembershipTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
-  startedAt   DateTime       @default(now())
-  expiresAt   DateTime?      // null = no expira (manual). En Stripe = fin del periodo actual.
-  active      Boolean        @default(true)
-  note        String?
+  id                   String         @id @default(cuid())
+  customerId           String         @unique
+  customer             Customer       @relation("CustomerMembership", fields: [customerId], references: [id], onDelete: Cascade)
+  tierId               String
+  tier                 MembershipTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  startedAt            DateTime       @default(now())
+  expiresAt            DateTime? // null = no expira (manual). En Stripe = fin del periodo actual.
+  active               Boolean        @default(true)
+  note                 String?
   // Stripe Subscriptions (null si la membresía es manual)
-  stripeSubscriptionId String? @unique
+  stripeSubscriptionId String?        @unique
   stripeCustomerId     String?
   stripeStatus         String? // active, past_due, canceled, etc.
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   @@index([active, expiresAt])
 }
 
 enum WaitlistStatus {
-  WAITING    // esperando que se libere cupo
-  NOTIFIED   // se le avisó de un cupo libre
-  CONVERTED  // ya reservó
+  WAITING // esperando que se libere cupo
+  NOTIFIED // se le avisó de un cupo libre
+  CONVERTED // ya reservó
   CANCELLED
 }
 
