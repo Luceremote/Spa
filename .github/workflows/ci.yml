@@ -76,5 +76,9 @@ jobs:
           node-version: "20"
       - name: Install
         run: cd apps/mobile && npm install --no-audit --no-fund
+      # Expo autogenera expo-env.d.ts (gitignored) al arrancar; en CI lo creamos
+      # manualmente para que tsc tenga los tipos de expo (process.env, etc.).
+      - name: Generate Expo env types
+        run: cd apps/mobile && printf '/// <reference types="expo/types" />\n' > expo-env.d.ts
       - name: Typecheck
         run: cd apps/mobile && npx tsc --noEmit
