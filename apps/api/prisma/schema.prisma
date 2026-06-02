@@ -365,6 +365,8 @@ model Payment {
   paidAt                DateTime?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
+
+  @@index([status, paidAt])
 }
 
 // Cupones / códigos promo

@@ -8,6 +8,7 @@ import { HttpError } from "../middleware/error.js";
 import { sanitizeText, sanitizePhoneDigits, normalizeEmail } from "../security/sanitize.js";
 import { sendMail, waitlistOpeningEmail } from "../mail.js";
 import { env } from "../env.js";
+import { publicWriteLimiter } from "../middleware/rate-limits.js";
 
 export const waitlistRouter = Router();
 
@@ -28,7 +29,7 @@ const joinSchema = z.object({
   note: z.string().max(300).transform((s) => sanitizeText(s, 300)).optional().nullable(),
 });
 
-waitlistRouter.post("/", async (req, res, next) => {
+waitlistRouter.post("/", publicWriteLimiter, async (req, res, next) => {
   try {
     const data = joinSchema.parse(req.body);
     const service = await prisma.service.findUnique({ where: { id: data.serviceId } });

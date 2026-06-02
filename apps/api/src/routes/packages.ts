@@ -8,6 +8,7 @@ import { HttpError } from "../middleware/error.js";
 import { sanitizeText, normalizeEmail } from "../security/sanitize.js";
 import { env } from "../env.js";
 import { recordTransaction } from "../finances-helpers.js";
+import { publicWriteLimiter } from "../middleware/rate-limits.js";
 
 export const packagesRouter = Router();
 
@@ -148,7 +149,7 @@ const buySchema = z.object({
   customerPhone: z.string().min(7).max(20),
 });
 
-packagesRouter.post("/buy", async (req, res, next) => {
+packagesRouter.post("/buy", publicWriteLimiter, async (req, res, next) => {
   try {
     if (!stripe) throw new HttpError(503, "Pagos no disponibles");
     const data = buySchema.parse(req.body);

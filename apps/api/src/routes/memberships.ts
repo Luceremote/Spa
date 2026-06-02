@@ -7,6 +7,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { sanitizeText, normalizeEmail, sanitizePhoneDigits } from "../security/sanitize.js";
 import { env } from "../env.js";
+import { publicWriteLimiter } from "../middleware/rate-limits.js";
 
 export const membershipsRouter = Router();
 
@@ -189,7 +190,7 @@ const subscribeSchema = z.object({
   }),
 });
 
-membershipsRouter.post("/subscribe", async (req, res, next) => {
+membershipsRouter.post("/subscribe", publicWriteLimiter, async (req, res, next) => {
   try {
     if (!stripe) throw new HttpError(503, "Pagos no disponibles");
     const data = subscribeSchema.parse(req.body);
