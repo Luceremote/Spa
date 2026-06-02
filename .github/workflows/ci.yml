@@ -75,9 +75,11 @@ jobs:
         with:
           node-version: "20"
       - name: Install
-        # --include=dev fuerza @types/node y demás devDependencies (algún
-        # default del runner las estaba omitiendo).
-        run: cd apps/mobile && npm install --no-audit --no-fund --include=dev
+        run: |
+          cd apps/mobile
+          npm install --no-audit --no-fund --include=dev
+          echo "--- @types presentes ---"; ls node_modules/@types 2>/dev/null || echo "(sin @types)"
+          npm ls @types/node 2>/dev/null || npm install --no-audit --no-fund --no-save @types/node@^22.9.0
       # Expo autogenera expo-env.d.ts (gitignored) al arrancar; en CI lo creamos
       # manualmente para que tsc tenga los tipos de expo (process.env, etc.).
       - name: Generate Expo env types
