@@ -1,6 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import express from "express";
 import multer from "multer";
+import rateLimit from "express-rate-limit";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 import { requireAuth } from "../middleware/auth.js";
@@ -82,6 +83,56 @@ uploadsRouter.post(
         }
 
         const key = `${randomBytes(16).toString("hex")}.${sig.ext}`;
+        const stored = await putImage(key, file.buffer, sig.mime);
+        res.status(201).json({ url: stored.url, size: stored.size, mime: stored.mime });
+      } catch (e) {
+        next(e);
+      }
+    });
+  }
+);
+
+// Subida PÚBLICA acotada para fotos de reseñas (sin auth).
+// Defensas: rate limit estricto + mismo sniff de magic bytes + nombre aleatorio.
+// Las reseñas quedan sin publicar hasta que el admin las apruebe, así la foto
+// nunca se muestra públicamente sin moderación.
+const publicUploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: async (req, res) => {
+    await logSecurityEvent({ type: "RATE_LIMITED", req, meta: { scope: "public_upload" } });
+    res.status(429).json({ error: "Demasiadas subidas. Intenta más tarde." });
+  },
+});
+
+uploadsRouter.post(
+  "/review-image",
+  publicUploadLimiter,
+  (req: Request, res: Response, next: NextFunction) => {
+    upload.single("file")(req, res, async (err: any) => {
+      if (err) {
+        await logSecurityEvent({
+          type: "UPLOAD_REJECTED",
+          req,
+          meta: { reason: err.message ?? "multer_error", scope: "review" },
+        });
+        return res.status(400).json({ error: err.message ?? "Error subiendo archivo" });
+      }
+      try {
+        const file = (req as any).file as Express.Multer.File | undefined;
+        if (!file) return res.status(400).json({ error: "Archivo requerido (campo 'file')" });
+        const sig = detectSig(file.buffer);
+        if (!sig) {
+          await logSecurityEvent({
+            type: "UPLOAD_REJECTED",
+            req,
+            meta: { reason: "magic_mismatch", declared: file.mimetype, scope: "review" },
+          });
+          return res.status(400).json({ error: "Archivo no es una imagen válida" });
+        }
+        const key = `review_${randomBytes(16).toString("hex")}.${sig.ext}`;
         const stored = await putImage(key, file.buffer, sig.mime);
         res.status(201).json({ url: stored.url, size: stored.size, mime: stored.mime });
       } catch (e) {

@@ -2,7 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
-import { sanitizeText, normalizeEmail } from "../security/sanitize.js";
+import { sanitizeText, normalizeEmail, isAllowedImageUrl } from "../security/sanitize.js";
+import { ALLOWED_IMAGE_HOSTS_EXTRA } from "../env.js";
 
 export const reviewsRouter = Router();
 
@@ -23,6 +24,7 @@ reviewsRouter.get("/", async (req, res, next) => {
         comment: true,
         serviceName: true,
         featured: true,
+        photoUrl: true,
         response: true,
         respondedAt: true,
         createdAt: true,
@@ -43,6 +45,16 @@ const submitSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().min(10).max(2000).transform((s) => sanitizeText(s, 2000)),
   serviceName: z.string().max(120).transform((s) => sanitizeText(s, 120)).optional().nullable(),
+  // Foto subida vía /uploads/review-image. Debe ser de un host permitido (R2/local).
+  photoUrl: z
+    .string()
+    .max(2048)
+    .optional()
+    .nullable()
+    .refine(
+      (u) => !u || u.startsWith("/uploads/") || isAllowedImageUrl(u, ALLOWED_IMAGE_HOSTS_EXTRA),
+      { message: "Imagen no permitida" }
+    ),
 });
 
 reviewsRouter.post("/", async (req, res, next) => {

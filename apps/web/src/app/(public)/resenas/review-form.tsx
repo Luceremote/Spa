@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Star, CheckCircle2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Loader2, Star, CheckCircle2, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/api";
+import { api, API_BASE } from "@/lib/api";
+
+const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+
+function absUrl(u: string): string {
+  return u.startsWith("http") ? u : `${API_BASE}${u}`;
+}
 
 export function ReviewForm() {
   const [authorName, setName] = useState("");
@@ -16,9 +22,39 @@ export function ReviewForm() {
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [serviceName, setServiceName] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function uploadPhoto(file: File) {
+    if (file.size > 3 * 1024 * 1024) {
+      setError("La imagen supera 3 MB.");
+      return;
+    }
+    setError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${PUBLIC_API}/uploads/review-image`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error ?? "No se pudo subir la imagen");
+      }
+      const { url } = await res.json();
+      setPhotoUrl(url);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +69,7 @@ export function ReviewForm() {
           rating,
           comment,
           serviceName: serviceName || null,
+          photoUrl: photoUrl || null,
         },
       });
       setSent(true);
@@ -134,9 +171,57 @@ export function ReviewForm() {
             />
           </div>
 
+          <div className="space-y-1">
+            <Label>Foto (opcional)</Label>
+            {photoUrl ? (
+              <div className="relative inline-block">
+                <img
+                  src={absUrl(photoUrl)}
+                  alt="Tu foto"
+                  className="h-28 w-28 object-cover rounded-md border"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPhotoUrl(null)}
+                  className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1"
+                  aria-label="Quitar foto"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadPhoto(f);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <ImagePlus className="h-4 w-4 mr-2" />
+                  )}
+                  Agregar foto
+                </Button>
+              </>
+            )}
+          </div>
+
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+          <Button type="submit" className="w-full" size="lg" disabled={submitting || uploading}>
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             Enviar reseña
           </Button>

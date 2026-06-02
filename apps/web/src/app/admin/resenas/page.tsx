@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Stars } from "@/components/stars";
-import { api, getToken } from "@/lib/api";
+import { api, getToken, API_BASE } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { formatDateTime } from "@/lib/utils";
 import type { Review } from "@/lib/types";
@@ -164,6 +164,13 @@ export default function ResenasAdminPage() {
                   </div>
                   <span className="text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</span>
                 </div>
+                {r.photoUrl && (
+                  <img
+                    src={r.photoUrl.startsWith("http") ? r.photoUrl : `${API_BASE}${r.photoUrl}`}
+                    alt="Foto de la reseña"
+                    className="mb-2 rounded-md max-h-40 object-cover border"
+                  />
+                )}
                 <p className="text-sm sm:text-base italic text-foreground/90 mb-2">
                   &ldquo;{r.comment}&rdquo;
                 </p>

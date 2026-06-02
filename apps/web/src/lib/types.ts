@@ -359,6 +359,7 @@ export interface Review {
   serviceName: string | null;
   published?: boolean;
   featured: boolean;
+  photoUrl?: string | null;
   response?: string | null;
   respondedAt?: string | null;
   createdAt: string;
