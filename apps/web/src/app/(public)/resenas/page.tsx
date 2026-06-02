@@ -3,14 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Stars } from "@/components/stars";
 import { ReviewForm } from "./review-form";
 import { Quote } from "lucide-react";
-import { API_BASE } from "@/lib/api";
+import { SmartImage } from "@/components/smart-image";
 import type { Review } from "@/lib/types";
 
 export const metadata = { title: "Reseñas" };
-
-function absUrl(u: string): string {
-  return u.startsWith("http") ? u : `${API_BASE}${u}`;
-}
 
 export default async function ResenasPage() {
   const reviews: Review[] = await fetchReviews({ limit: 50 });
@@ -44,12 +40,15 @@ export default async function ResenasPage() {
               <CardContent className="p-5 sm:p-6">
                 <Stars value={r.rating} />
                 {r.photoUrl && (
-                  <img
-                    src={absUrl(r.photoUrl)}
-                    alt={`Foto de ${r.authorName}`}
-                    className="mt-3 rounded-lg w-full max-h-64 object-cover"
-                    loading="lazy"
-                  />
+                  <div className="mt-3 relative w-full h-56 rounded-lg overflow-hidden">
+                    <SmartImage
+                      src={r.photoUrl}
+                      alt={`Foto de ${r.authorName}`}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      className="object-cover"
+                    />
+                  </div>
                 )}
                 <p className="mt-3 text-sm sm:text-base text-foreground/90 leading-relaxed italic">
                   &ldquo;{r.comment}&rdquo;

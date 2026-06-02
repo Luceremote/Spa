@@ -1,5 +1,6 @@
 import { fetchPhotos } from "@/lib/server-fetch";
 import { Camera } from "lucide-react";
+import { SmartImage } from "@/components/smart-image";
 import type { Photo } from "@/lib/types";
 
 export const metadata = { title: "Galería" };
@@ -25,12 +26,12 @@ export default async function GaleriaPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
           {photos.map((p) => (
             <figure key={p.id} className="group relative overflow-hidden rounded-lg aspect-square">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SmartImage
                 src={p.url}
                 alt={p.caption ?? "Foto del spa"}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
               {p.caption && (
                 <figcaption className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
