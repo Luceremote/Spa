@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, Gift, X, Package, Crown, Award } from "lucide-react";
+import { WaitlistCTA } from "./waitlist-cta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -394,6 +395,11 @@ export function BookingForm({ services, preselectedServiceId }: Props) {
                   })}
                 </div>
               </div>
+            )}
+
+            {/* Lista de espera cuando no hay cupo */}
+            {serviceId && date && (dayClosed.closed || SLOTS.every((s) => busy.includes(s))) && (
+              <WaitlistCTA serviceId={serviceId} preferredDate={date} />
             )}
 
             <Button

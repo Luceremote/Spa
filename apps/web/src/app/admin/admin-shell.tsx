@@ -50,6 +50,7 @@ const NAV = [
   { href: "/admin/comisiones", label: "Comisiones", icon: Percent },
   { href: "/admin/bloqueos", label: "Bloqueos staff", icon: UserX },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
+  { href: "/admin/lista-espera", label: "Lista de espera", icon: BellRing },
   { href: "/admin/inventario", label: "Inventario", icon: Package },
   { href: "/admin/finanzas", label: "Finanzas", icon: Wallet },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },

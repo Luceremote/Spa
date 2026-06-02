@@ -166,6 +166,29 @@ export function followupEmail(d: FollowupMailData): { subject: string; html: str
   };
 }
 
+interface WaitlistMailData {
+  spaName: string;
+  customerName: string;
+  serviceName: string;
+  appUrl: string;
+}
+
+export function waitlistOpeningEmail(d: WaitlistMailData): { subject: string; html: string } {
+  return {
+    subject: `¡Se liberó un cupo para ${d.serviceName}! — ${d.spaName}`,
+    html: `<div style="${BOX}">
+      <h2 style="color:#d63384;margin:0 0 12px">¡Buenas noticias, ${esc(d.customerName)}! 🎉</h2>
+      <p>Se ha liberado un cupo para <strong>${esc(d.serviceName)}</strong>, el servicio en el que estabas en lista de espera.</p>
+      <p>Los cupos vuelan: reserva ahora antes de que alguien más lo tome.</p>
+      <p style="text-align:center;margin:24px 0">
+        <a href="${esc(d.appUrl)}/reservar" style="${BTN}">Reservar ahora</a>
+      </p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+      <p style="color:#999;font-size:12px;text-align:center">${esc(d.spaName)}</p>
+    </div>`,
+  };
+}
+
 export function bookingPaidEmail(d: BookingMailData): { subject: string; html: string } {
   return {
     subject: `Pago confirmado — ${d.spaName}`,

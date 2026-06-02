@@ -364,6 +364,21 @@ export interface Review {
   createdAt: string;
 }
 
+export type WaitlistStatus = "WAITING" | "NOTIFIED" | "CONVERTED" | "CANCELLED";
+
+export interface WaitlistEntry {
+  id: string;
+  customerId: string;
+  customer?: { id: string; name: string; phone: string; email: string | null };
+  serviceId: string;
+  service?: { id: string; name: string };
+  preferredDate: string | null;
+  note: string | null;
+  status: WaitlistStatus;
+  notifiedAt: string | null;
+  createdAt: string;
+}
+
 export interface Subscriber {
   id: string;
   email: string;

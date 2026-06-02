@@ -39,6 +39,7 @@ import { marketingRouter } from "./routes/marketing.js";
 import { packagesRouter } from "./routes/packages.js";
 import { membershipsRouter } from "./routes/memberships.js";
 import { reportsRouter } from "./routes/reports.js";
+import { waitlistRouter } from "./routes/waitlist.js";
 import { startCron } from "./cron.js";
 
 const app = express();
@@ -171,6 +172,7 @@ app.use("/api/marketing", marketingRouter);
 app.use("/api/packages", packagesRouter);
 app.use("/api/memberships", membershipsRouter);
 app.use("/api/reports", reportsRouter);
+app.use("/api/waitlist", waitlistRouter);
 
 app.use("/uploads", uploadsStatic);
 

@@ -104,6 +104,7 @@ model Customer {
   loyaltyAccount LoyaltyAccount?
   packagePurchases PackagePurchase[] @relation("CustomerPackages")
   membership CustomerMembership? @relation("CustomerMembership")
+  waitlistEntries WaitlistEntry[] @relation("CustomerWaitlist")
   // Última vez que se le envió un email de "te extrañamos" (para no spammear)
   lastFollowupAt DateTime?
   createdAt DateTime  @default(now())
@@ -139,6 +140,7 @@ model Service {
   staff           Staff[]   @relation("StaffServices")
   bookings        Booking[]
   packages        ServicePackage[] @relation("ServicePackages")
+  waitlist        WaitlistEntry[]  @relation("ServiceWaitlist")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -483,6 +485,7 @@ model Review {
   serviceName  String?  // qué servicio le dio (texto libre)
   published    Boolean  @default(false) // admin debe aprobar antes de mostrar
   featured     Boolean  @default(false) // destacada (aparece en landing)
+  photoUrl     String?  // foto opcional subida por el cliente (moderada antes de publicarse)
   response     String?  // respuesta pública del spa al cliente
   respondedAt  DateTime?
   createdAt    DateTime @default(now())
@@ -681,7 +684,8 @@ model MembershipTier {
   updatedAt       DateTime @updatedAt
 }
 
-// Membresía actual de un cliente (gestión manual; no Stripe Subscriptions todavía)
+// Membresía actual de un cliente. Puede ser manual (asignada por admin) o
+// vía Stripe Subscription (cobro recurrente automático).
 model CustomerMembership {
   id          String         @id @default(cuid())
   customerId  String         @unique
@@ -689,13 +693,42 @@ model CustomerMembership {
   tierId      String
   tier        MembershipTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
   startedAt   DateTime       @default(now())
-  expiresAt   DateTime?      // null = no expira (manual)
+  expiresAt   DateTime?      // null = no expira (manual). En Stripe = fin del periodo actual.
   active      Boolean        @default(true)
   note        String?
+  // Stripe Subscriptions (null si la membresía es manual)
+  stripeSubscriptionId String? @unique
+  stripeCustomerId     String?
+  stripeStatus         String? // active, past_due, canceled, etc.
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   @@index([active, expiresAt])
+}
+
+enum WaitlistStatus {
+  WAITING    // esperando que se libere cupo
+  NOTIFIED   // se le avisó de un cupo libre
+  CONVERTED  // ya reservó
+  CANCELLED
+}
+
+// Lista de espera: cliente quiere un servicio pero no hay (o no encontró) cupo.
+model WaitlistEntry {
+  id            String         @id @default(cuid())
+  customerId    String
+  customer      Customer       @relation("CustomerWaitlist", fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       Service        @relation("ServiceWaitlist", fields: [serviceId], references: [id], onDelete: Cascade)
+  preferredDate DateTime?      @db.Date // fecha que le interesaba (opcional)
+  note          String?
+  status        WaitlistStatus @default(WAITING)
+  notifiedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([serviceId, status])
+  @@index([status, createdAt])
 }
 
 model SecurityEvent {

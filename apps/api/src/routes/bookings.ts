@@ -12,6 +12,7 @@ import { sendMail, bookingConfirmationEmail, newBookingAdminEmail, postServiceSu
 import { env } from "../env.js";
 import { evaluateCoupon } from "./coupons.js";
 import { getActiveDiscountForCustomer } from "./memberships.js";
+import { notifyWaitlistForService } from "./waitlist.js";
 
 // Valida que una gift card exista, esté activa y tenga al menos algo de saldo
 async function evaluateGiftCard(code: string, basePriceCents: number) {
@@ -484,6 +485,9 @@ bookingsRouter.post("/:id/cancel-public", async (req, res, next) => {
 
     await prisma.booking.update({ where: { id }, data: { status: "CANCELLED" } });
 
+    // Se liberó un cupo → avisar a la lista de espera de ese servicio (best-effort)
+    notifyWaitlistForService(booking.serviceId).catch(() => {});
+
     // Aviso al admin (best-effort). Si ya estaba pagada, el admin gestiona el reembolso.
     const cfg = await prisma.siteConfig.findUnique({ where: { id: "singleton" } });
     if (env.ADMIN_EMAIL) {
@@ -642,6 +646,11 @@ bookingsRouter.put("/:id", requireAuth, async (req, res, next) => {
         where: { id },
         data: { surveySentAt: new Date() },
       });
+    }
+
+    // Si el admin cancela, se libera un cupo → avisar lista de espera (best-effort)
+    if (data.status === "CANCELLED" && existing.status !== "CANCELLED") {
+      notifyWaitlistForService(existing.serviceId).catch(() => {});
     }
 
     res.json({ booking });
