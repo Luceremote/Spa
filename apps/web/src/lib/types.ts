@@ -226,6 +226,8 @@ export interface CustomerMembership {
   expiresAt: string | null;
   active: boolean;
   note: string | null;
+  stripeSubscriptionId?: string | null;
+  stripeStatus?: string | null;
 }
 
 export interface Coupon {

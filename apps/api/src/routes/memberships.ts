@@ -1,12 +1,18 @@
-// Tiers de membresía + asignación a clientes (gestión manual; sin Stripe Subscriptions).
+// Tiers de membresía + asignación manual + suscripción con cobro automático (Stripe).
 import { Router } from "express";
 import { z } from "zod";
+import Stripe from "stripe";
 import { prisma } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
-import { sanitizeText } from "../security/sanitize.js";
+import { sanitizeText, normalizeEmail, sanitizePhoneDigits } from "../security/sanitize.js";
+import { env } from "../env.js";
 
 export const membershipsRouter = Router();
+
+const stripe = env.STRIPE_SECRET_KEY
+  ? new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: "2024-11-20.acacia" as any })
+  : null;
 
 // ─── PÚBLICO: listar tiers activos (para landing) ──
 membershipsRouter.get("/tiers", async (_req, res, next) => {
@@ -167,6 +173,137 @@ membershipsRouter.delete("/customers/:customerId", requireAuth, async (req, res,
     next(e);
   }
 });
+
+// ─── PÚBLICO: suscribirse a un tier (cobro mensual automático vía Stripe) ──
+const subscribeSchema = z.object({
+  tierId: z.string().cuid(),
+  customer: z.object({
+    name: z.string().min(1).max(120).transform((s) => sanitizeText(s, 120)),
+    phone: z
+      .string()
+      .min(7)
+      .max(20)
+      .transform((s) => sanitizePhoneDigits(s))
+      .refine((s) => s.length >= 7 && s.length <= 15, { message: "Teléfono inválido" }),
+    email: z.string().email().max(254).transform(normalizeEmail),
+  }),
+});
+
+membershipsRouter.post("/subscribe", async (req, res, next) => {
+  try {
+    if (!stripe) throw new HttpError(503, "Pagos no disponibles");
+    const data = subscribeSchema.parse(req.body);
+    const tier = await prisma.membershipTier.findUnique({ where: { id: data.tierId } });
+    if (!tier || !tier.active) throw new HttpError(404, "Membresía no disponible");
+    if (tier.monthlyPriceCents <= 0) throw new HttpError(400, "Este plan no es de cobro online");
+
+    // Cliente: buscar por teléfono o crear
+    const found = await prisma.customer.findFirst({ where: { phone: data.customer.phone } });
+    const customer = found
+      ? await prisma.customer.update({
+          where: { id: found.id },
+          data: { name: data.customer.name, email: data.customer.email },
+        })
+      : await prisma.customer.create({
+          data: {
+            name: data.customer.name,
+            phone: data.customer.phone,
+            email: data.customer.email,
+          },
+        });
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer_email: data.customer.email,
+      line_items: [
+        {
+          price_data: {
+            currency: env.CURRENCY,
+            product_data: { name: `Membresía ${tier.name}`.slice(0, 100) },
+            unit_amount: tier.monthlyPriceCents,
+            recurring: { interval: "month" },
+          },
+          quantity: 1,
+        },
+      ],
+      subscription_data: {
+        metadata: { type: "membership", customerId: customer.id, tierId: tier.id },
+      },
+      metadata: { type: "membership", customerId: customer.id, tierId: tier.id },
+      success_url: `${env.APP_URL}/membresias/exito`,
+      cancel_url: `${env.APP_URL}/membresias`,
+    });
+
+    res.json({ url: session.url });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ─── PÚBLICO: portal de gestión de suscripción (cancelar, cambiar tarjeta) ──
+membershipsRouter.post("/portal", async (req, res, next) => {
+  try {
+    if (!stripe) throw new HttpError(503, "Pagos no disponibles");
+    const phone = sanitizePhoneDigits(String(req.body?.phone ?? ""));
+    if (phone.length < 7) throw new HttpError(400, "Teléfono inválido");
+    const customer = await prisma.customer.findFirst({ where: { phone } });
+    const membership = customer
+      ? await prisma.customerMembership.findUnique({ where: { customerId: customer.id } })
+      : null;
+    if (!membership?.stripeCustomerId) {
+      throw new HttpError(404, "No encontramos una suscripción con ese teléfono");
+    }
+    const portal = await stripe.billingPortal.sessions.create({
+      customer: membership.stripeCustomerId,
+      return_url: `${env.APP_URL}/membresias`,
+    });
+    res.json({ url: portal.url });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Aplica el estado de una suscripción de Stripe a la membresía del cliente.
+// Idempotente. Llamado desde el webhook.
+export async function applyMembershipSubscription(args: {
+  customerId: string;
+  tierId: string;
+  stripeSubscriptionId: string;
+  stripeCustomerId: string;
+  status: string;
+  currentPeriodEnd: number | null; // epoch seconds
+}): Promise<void> {
+  const active = ["active", "trialing", "past_due"].includes(args.status);
+  const expiresAt = args.currentPeriodEnd ? new Date(args.currentPeriodEnd * 1000) : null;
+  await prisma.customerMembership.upsert({
+    where: { customerId: args.customerId },
+    update: {
+      tierId: args.tierId,
+      stripeSubscriptionId: args.stripeSubscriptionId,
+      stripeCustomerId: args.stripeCustomerId,
+      stripeStatus: args.status,
+      active,
+      expiresAt,
+    },
+    create: {
+      customerId: args.customerId,
+      tierId: args.tierId,
+      stripeSubscriptionId: args.stripeSubscriptionId,
+      stripeCustomerId: args.stripeCustomerId,
+      stripeStatus: args.status,
+      active,
+      expiresAt,
+    },
+  });
+}
+
+// Marca una suscripción como cancelada (por subscription.deleted).
+export async function cancelMembershipSubscription(stripeSubscriptionId: string): Promise<void> {
+  await prisma.customerMembership.updateMany({
+    where: { stripeSubscriptionId },
+    data: { active: false, stripeStatus: "canceled" },
+  });
+}
 
 // ─── Helper: obtener descuento activo de un cliente (% sobre precio) ──
 export async function getActiveDiscountForCustomer(customerId: string): Promise<number> {

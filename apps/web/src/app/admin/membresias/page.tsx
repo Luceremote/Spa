@@ -154,8 +154,11 @@ export default function MembershipsPage() {
     }
   }
 
-  async function cancelMembership(customerId: string) {
-    if (!confirm("¿Cancelar esta membresía?")) return;
+  async function cancelMembership(customerId: string, isStripe: boolean) {
+    const msg = isStripe
+      ? "Esta es una suscripción de Stripe con cobro automático. Quitarla aquí NO cancela el cobro en Stripe — el cliente debe cancelar desde su portal (o cancélala tú en el dashboard de Stripe). ¿Quitar de todos modos?"
+      : "¿Cancelar esta membresía?";
+    if (!confirm(msg)) return;
     await api(`/memberships/customers/${customerId}`, {
       method: "DELETE",
       token: getToken() ?? undefined,
@@ -352,6 +355,11 @@ export default function MembershipsPage() {
                       {m.expiresAt && ` · Expira ${new Date(m.expiresAt).toLocaleDateString()}`}
                     </div>
                   </div>
+                  {m.stripeSubscriptionId && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                      Suscripción {m.stripeStatus ?? ""}
+                    </span>
+                  )}
                   <span
                     className="text-xs font-medium px-2 py-0.5 rounded-full text-white"
                     style={{ background: m.tier?.color ?? "#a855f7" }}
@@ -359,7 +367,7 @@ export default function MembershipsPage() {
                     {m.tier?.name} ({m.tier?.discountPercent}%)
                   </span>
                   <button
-                    onClick={() => cancelMembership(m.customerId)}
+                    onClick={() => cancelMembership(m.customerId, !!m.stripeSubscriptionId)}
                     className="p-2 hover:bg-muted rounded text-destructive"
                   >
                     <X className="h-4 w-4" />

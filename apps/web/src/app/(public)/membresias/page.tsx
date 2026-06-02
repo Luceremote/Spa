@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown, Check, Sparkles } from "lucide-react";
+import { SubscribeForm } from "./subscribe-form";
+import { ManageSubscription } from "./manage-subscription";
 
 export const metadata = {
   title: "Membresías",
@@ -102,7 +104,9 @@ export default async function MembresiasPage() {
                     </ul>
                   )}
                   <div className="mt-auto pt-6">
-                    {waUrl ? (
+                    {t.monthlyPriceCents > 0 ? (
+                      <SubscribeForm tierId={t.id} tierName={t.name} />
+                    ) : waUrl ? (
                       <Button asChild className="w-full">
                         <a href={waUrl} target="_blank" rel="noopener noreferrer">
                           Quiero {t.name}
@@ -118,6 +122,12 @@ export default async function MembresiasPage() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {tiers.some((t: any) => t.monthlyPriceCents > 0) && (
+        <div className="mt-10 text-center">
+          <ManageSubscription />
         </div>
       )}
     </div>

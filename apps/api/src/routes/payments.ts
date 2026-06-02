@@ -8,6 +8,7 @@ import { logSecurityEvent } from "../security/events.js";
 import { sendMail, bookingPaidEmail } from "../mail.js";
 import { activateGiftCard } from "./giftcards.js";
 import { activatePackagePurchase } from "./packages.js";
+import { applyMembershipSubscription, cancelMembershipSubscription } from "./memberships.js";
 import { recordBookingIncome, recordRefund } from "../finances-helpers.js";
 import { earnPointsFromBooking } from "../loyalty-helpers.js";
 
@@ -130,6 +131,13 @@ export const stripeWebhookHandler = [
         const session = event.data.object as Stripe.Checkout.Session;
         const type = session.metadata?.type;
 
+        // Suscripción a membresía: el estado lo aplican los eventos customer.subscription.*
+        // (traen status + current_period_end). Aquí sólo confirmamos recepción.
+        if (type === "membership" || session.mode === "subscription") {
+          await logSecurityEvent({ type: "WEBHOOK_OK", req, meta: { event: event.type, kind: "membership" } });
+          return res.json({ received: true, kind: "membership" });
+        }
+
         // Compra de paquete (sesiones múltiples)
         if (type === "package") {
           const purchaseId = session.metadata?.purchaseId;
@@ -231,6 +239,28 @@ export const stripeWebhookHandler = [
             data: { status: "FAILED" },
           });
         }
+      } else if (
+        event.type === "customer.subscription.created" ||
+        event.type === "customer.subscription.updated"
+      ) {
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId = sub.metadata?.customerId;
+        const tierId = sub.metadata?.tierId;
+        if (customerId && tierId) {
+          await applyMembershipSubscription({
+            customerId,
+            tierId,
+            stripeSubscriptionId: sub.id,
+            stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+            status: sub.status,
+            currentPeriodEnd: (sub as any).current_period_end ?? null,
+          });
+          await logSecurityEvent({ type: "WEBHOOK_OK", req, meta: { event: event.type, sub: sub.id } });
+        }
+      } else if (event.type === "customer.subscription.deleted") {
+        const sub = event.data.object as Stripe.Subscription;
+        await cancelMembershipSubscription(sub.id);
+        await logSecurityEvent({ type: "WEBHOOK_OK", req, meta: { event: event.type, sub: sub.id } });
       } else if (event.type === "charge.refunded") {
         const charge = event.data.object as Stripe.Charge;
         const pi = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
