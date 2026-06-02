@@ -36,14 +36,11 @@ export default function AgendaPage() {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
 
-  useEffect(() => {
-    api<{ staff: Staff[] }>("/staff", { token: getToken() ?? undefined })
-      .then((r) => setStaffList(r.staff))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
+  function load() {
     const token = getToken();
     if (!token) return;
     setLoading(true);
@@ -53,7 +50,57 @@ export default function AgendaPage() {
     api<{ bookings: Booking[] }>(`/bookings?from=${from}&to=${to}${q}`, { token })
       .then((r) => setBookings(r.bookings))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    api<{ staff: Staff[] }>("/staff", { token: getToken() ?? undefined })
+      .then((r) => setStaffList(r.staff))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart, staffId]);
+
+  // Arrastrar una cita a otro día: conserva la hora, cambia la fecha.
+  async function onDropDay(targetDay: Date) {
+    const id = draggingId;
+    setDragOverKey(null);
+    setDraggingId(null);
+    if (!id) return;
+    const b = bookings.find((x) => x.id === id);
+    if (!b) return;
+    const orig = new Date(b.startAt);
+    const sameDay =
+      orig.getFullYear() === targetDay.getFullYear() &&
+      orig.getMonth() === targetDay.getMonth() &&
+      orig.getDate() === targetDay.getDate();
+    if (sameDay) return;
+    const newStart = new Date(
+      targetDay.getFullYear(),
+      targetDay.getMonth(),
+      targetDay.getDate(),
+      orig.getHours(),
+      orig.getMinutes(),
+      0,
+      0
+    );
+    setMoving(true);
+    try {
+      await api(`/bookings/${id}`, {
+        method: "PUT",
+        token: getToken() ?? undefined,
+        json: { startAt: newStart.toISOString() },
+      });
+      load();
+    } catch (e: any) {
+      alert(e.message ?? "No se pudo mover la cita");
+      load();
+    } finally {
+      setMoving(false);
+    }
+  }
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
@@ -87,7 +134,14 @@ export default function AgendaPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <CalendarDays className="h-6 w-6" /> Agenda semanal
           </h1>
-          <p className="text-sm text-muted-foreground">{rangeLabel}</p>
+          <p className="text-sm text-muted-foreground">
+            {rangeLabel}
+            {moving ? (
+              <span className="text-primary"> · moviendo…</span>
+            ) : (
+              <span className="hidden sm:inline"> · arrastra una cita a otro día para reagendar</span>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -124,11 +178,24 @@ export default function AgendaPage() {
             const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             const list = byDay.get(key) ?? [];
             const isToday = key === todayKey;
+            const canDrop = draggingId !== null;
             return (
               <div
                 key={key}
-                className={`rounded-lg border min-h-[120px] ${
-                  isToday ? "border-primary ring-1 ring-primary/30" : ""
+                onDragOver={(e) => {
+                  if (canDrop) {
+                    e.preventDefault();
+                    setDragOverKey(key);
+                  }
+                }}
+                onDragLeave={() => setDragOverKey((k) => (k === key ? null : k))}
+                onDrop={() => onDropDay(d)}
+                className={`rounded-lg border min-h-[120px] transition-colors ${
+                  dragOverKey === key
+                    ? "border-primary border-dashed bg-primary/5"
+                    : isToday
+                    ? "border-primary ring-1 ring-primary/30"
+                    : ""
                 }`}
               >
                 <div
@@ -145,24 +212,35 @@ export default function AgendaPage() {
                   {list.length === 0 ? (
                     <p className="text-[11px] text-muted-foreground/60 text-center py-2">—</p>
                   ) : (
-                    list.map((b) => (
-                      <div
-                        key={b.id}
-                        className={`text-[11px] leading-tight rounded border px-1.5 py-1 ${
-                          STATUS_COLORS[b.status]
-                        }`}
-                        title={`${b.customer?.name} · ${b.service?.name}${
-                          b.staff ? ` · ${b.staff.name}` : ""
-                        }`}
-                      >
-                        <div className="font-semibold">{formatTime(b.startAt)}</div>
-                        <div className="truncate">{b.service?.name}</div>
-                        <div className="truncate opacity-80">{b.customer?.name}</div>
-                        {!staffId && b.staff && (
-                          <div className="truncate opacity-70">{b.staff.name}</div>
-                        )}
-                      </div>
-                    ))
+                    list.map((b) => {
+                      const movable = ["PENDING", "CONFIRMED"].includes(b.status);
+                      return (
+                        <div
+                          key={b.id}
+                          draggable={movable && !moving}
+                          onDragStart={() => movable && setDraggingId(b.id)}
+                          onDragEnd={() => {
+                            setDraggingId(null);
+                            setDragOverKey(null);
+                          }}
+                          className={`text-[11px] leading-tight rounded border px-1.5 py-1 ${
+                            STATUS_COLORS[b.status]
+                          } ${movable ? "cursor-grab active:cursor-grabbing" : ""} ${
+                            draggingId === b.id ? "opacity-40" : ""
+                          }`}
+                          title={`${b.customer?.name} · ${b.service?.name}${
+                            b.staff ? ` · ${b.staff.name}` : ""
+                          }${movable ? " · arrastra para mover de día" : ""}`}
+                        >
+                          <div className="font-semibold">{formatTime(b.startAt)}</div>
+                          <div className="truncate">{b.service?.name}</div>
+                          <div className="truncate opacity-80">{b.customer?.name}</div>
+                          {!staffId && b.staff && (
+                            <div className="truncate opacity-70">{b.staff.name}</div>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
