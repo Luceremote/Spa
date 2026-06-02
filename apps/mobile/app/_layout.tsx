@@ -11,6 +11,9 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="servicio/[slug]" options={{ headerShown: true, title: "Servicio" }} />
           <Stack.Screen name="reservar" options={{ headerShown: true, title: "Reservar" }} />
+          <Stack.Screen name="paquetes" options={{ headerShown: true, title: "Paquetes" }} />
+          <Stack.Screen name="membresias" options={{ headerShown: true, title: "Membresías" }} />
+          <Stack.Screen name="saldo" options={{ headerShown: true, title: "Consultar saldo" }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

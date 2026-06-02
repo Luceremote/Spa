@@ -184,6 +184,32 @@ export default function Home() {
               <Ionicons name="chevron-forward" size={22} color={primary} />
             </View>
           </Pressable>
+
+          {/* ACCESOS: paquetes, membresías, saldo */}
+          <View>
+            <SectionHeader title="Más para ti" subtitle="Ahorra y acumula" />
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+              {[
+                { icon: "pricetags" as const, title: "Paquetes", desc: "Sesiones con descuento", route: "/paquetes" },
+                { icon: "ribbon" as const, title: "Membresías", desc: "Descuentos de socio", route: "/membresias" },
+                { icon: "wallet" as const, title: "Mi saldo", desc: "Gift card y puntos", route: "/saldo" },
+              ].map((item) => (
+                <Pressable
+                  key={item.route}
+                  onPress={() => router.push(item.route as any)}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, flexGrow: 1, flexBasis: "47%" }]}
+                >
+                  <View style={[styles.quickCard, { borderRadius: radius(theme, 1.2), ...shadow.sm }]}>
+                    <View style={[styles.quickIcon, { backgroundColor: hsl(theme.colorPrimary, 0.12) }]}>
+                      <Ionicons name={item.icon} size={20} color={primary} />
+                    </View>
+                    <Text style={styles.quickTitle}>{item.title}</Text>
+                    <Text style={styles.quickDesc}>{item.desc}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </View>
 
         <View style={{ height: 90 }} />
@@ -236,4 +262,8 @@ const styles = StyleSheet.create({
   giftIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   giftTitle: { fontSize: 16, fontWeight: "700" },
   giftDesc: { fontSize: 13, color: "#888", marginTop: 1 },
+  quickCard: { backgroundColor: "#fff", padding: 14, gap: 6 },
+  quickIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  quickTitle: { fontSize: 15, fontWeight: "700" },
+  quickDesc: { fontSize: 12, color: "#888" },
 });
