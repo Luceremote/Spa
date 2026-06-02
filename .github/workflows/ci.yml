@@ -75,11 +75,13 @@ jobs:
         with:
           node-version: "20"
       - name: Install
+        # Un dep transitivo de Expo fija @types/node@18 y npm lo dedupea,
+        # ignorando el ^22.9.0 del package.json → tsc no resuelve los tipos.
+        # Forzamos la versión correcta tras el install normal.
         run: |
           cd apps/mobile
-          npm install --no-audit --no-fund --include=dev
-          echo "--- @types presentes ---"; ls node_modules/@types 2>/dev/null || echo "(sin @types)"
-          npm ls @types/node 2>/dev/null || npm install --no-audit --no-fund --no-save @types/node@^22.9.0
+          npm install --no-audit --no-fund
+          npm install --no-audit --no-fund --no-save @types/node@^22.9.0
       # Expo autogenera expo-env.d.ts (gitignored) al arrancar; en CI lo creamos
       # manualmente para que tsc tenga los tipos de expo (process.env, etc.).
       - name: Generate Expo env types
