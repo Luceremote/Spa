@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Sparkles, Calendar, CreditCard, MessageSquare, ArrowRight, Tag, Crown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getT, LOCALE_COOKIE, normalizeLocale } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { Hero } from "@/components/landing/hero";
 import {
@@ -61,6 +63,7 @@ export default async function HomePage() {
       fetchTiersPreview(),
       fetchReviews({ limit: 50 }),
     ]);
+  const tr = getT(normalizeLocale(cookies().get(LOCALE_COOKIE)?.value));
   const topPackages = packages.slice(0, 3);
   const topTiers = tiers.slice(0, 3);
   const featured: Service[] = services.filter((s: Service) => s.featured).slice(0, 3);
@@ -121,14 +124,14 @@ export default async function HomePage() {
       {/* CÓMO FUNCIONA */}
       <section className="container py-16">
         <div className="text-center mb-10 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3">Cómo funciona</h2>
-          <p className="text-sm sm:text-base text-muted-foreground">Reserva tu momento de bienestar en 3 pasos</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3">{tr("home.how.title")}</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">{tr("home.how.subtitle")}</p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            { icon: Sparkles, title: "Elige tu servicio", desc: "Explora nuestro menú de tratamientos." },
-            { icon: Calendar, title: "Reserva tu fecha", desc: "Selecciona día y hora disponibles." },
-            { icon: CreditCard, title: "Paga seguro", desc: "Con tarjeta de crédito o débito vía Stripe." },
+            { icon: Sparkles, title: tr("home.how.s1.title"), desc: tr("home.how.s1.desc") },
+            { icon: Calendar, title: tr("home.how.s2.title"), desc: tr("home.how.s2.desc") },
+            { icon: CreditCard, title: tr("home.how.s3.title"), desc: tr("home.how.s3.desc") },
           ].map((s, i) => (
             <Card key={i} className="text-center">
               <CardContent className="pt-8">
@@ -148,11 +151,11 @@ export default async function HomePage() {
         <section className="container py-16">
           <div className="flex flex-wrap items-end justify-between mb-6 sm:mb-8 gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold">Servicios destacados</h2>
-              <p className="text-sm sm:text-base text-muted-foreground">Lo más solicitado por nuestros clientes</p>
+              <h2 className="text-2xl sm:text-3xl font-bold">{tr("home.featured.title")}</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">{tr("home.featured.subtitle")}</p>
             </div>
             <Button asChild variant="outline">
-              <Link href="/servicios">Ver todos →</Link>
+              <Link href="/servicios">{tr("home.featured.all")}</Link>
             </Button>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
@@ -189,8 +192,8 @@ export default async function HomePage() {
         <section className="bg-muted/40 py-16">
           <div className="container">
             <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-3">Categorías</h2>
-              <p className="text-sm sm:text-base text-muted-foreground">Encuentra el tratamiento ideal</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">{tr("home.categories.title")}</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">{tr("home.categories.subtitle")}</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
               {categories.map((c: Category) => (
@@ -201,7 +204,7 @@ export default async function HomePage() {
                 >
                   <h3 className="font-semibold mb-1">{c.name}</h3>
                   <p className="text-xs text-muted-foreground">
-                    {c._count?.services ?? 0} servicios
+                    {c._count?.services ?? 0} {tr("home.categories.count")}
                   </p>
                 </Link>
               ))}
@@ -214,9 +217,9 @@ export default async function HomePage() {
       {(topPackages.length > 0 || topTiers.length > 0) && (
         <section className="container py-16">
           <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3">Ahorra más</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3">{tr("home.save.title")}</h2>
             <p className="text-sm sm:text-base text-muted-foreground">
-              Compra paquetes de sesiones o únete a nuestro club con descuentos permanentes
+              {tr("home.save.subtitle")}
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
@@ -225,14 +228,14 @@ export default async function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Tag className="h-5 w-5 text-primary" />
-                    <h3 className="text-xl font-bold">Paquetes</h3>
+                    <h3 className="text-xl font-bold">{tr("home.save.packages")}</h3>
                   </div>
                   <ul className="space-y-3 mb-5">
                     {topPackages.map((p: any) => (
                       <li key={p.id} className="flex items-center justify-between text-sm">
                         <span>
                           <span className="font-medium">{p.name}</span>
-                          <span className="text-muted-foreground"> · {p.sessions} sesiones</span>
+                          <span className="text-muted-foreground"> · {p.sessions} {tr("home.save.sessions")}</span>
                         </span>
                         <span className="font-semibold text-primary">
                           {formatMoney(p.priceCents)}
@@ -241,7 +244,7 @@ export default async function HomePage() {
                     ))}
                   </ul>
                   <Button asChild className="w-full">
-                    <Link href="/paquetes">Ver paquetes</Link>
+                    <Link href="/paquetes">{tr("home.save.packages.cta")}</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -251,7 +254,7 @@ export default async function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Crown className="h-5 w-5 text-primary" />
-                    <h3 className="text-xl font-bold">Membresías</h3>
+                    <h3 className="text-xl font-bold">{tr("home.save.memberships")}</h3>
                   </div>
                   <ul className="space-y-3 mb-5">
                     {topTiers.map((t: any) => (
@@ -260,17 +263,17 @@ export default async function HomePage() {
                           <Check className="h-4 w-4 text-primary" />
                           <span className="font-medium">{t.name}</span>
                           <span className="text-muted-foreground">
-                            · {t.discountPercent}% dto.
+                            · {t.discountPercent}% {tr("home.save.discount")}
                           </span>
                         </span>
                         <span className="font-semibold text-primary">
-                          {formatMoney(t.monthlyPriceCents)}/mes
+                          {formatMoney(t.monthlyPriceCents)}{tr("home.save.month")}
                         </span>
                       </li>
                     ))}
                   </ul>
                   <Button asChild className="w-full">
-                    <Link href="/membresias">Conocer el club</Link>
+                    <Link href="/membresias">{tr("home.save.memberships.cta")}</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -285,7 +288,7 @@ export default async function HomePage() {
           <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
             <div className={config.aboutImageUrl ? "" : "md:col-span-2 max-w-2xl mx-auto text-center"}>
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4">
-                Sobre nosotros
+                {tr("home.about.badge")}
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold mb-4">
                 {config.aboutTitle ?? `Conoce ${config.spaName}`}
@@ -298,7 +301,7 @@ export default async function HomePage() {
                 </div>
               )}
               <Button asChild variant="link" className="mt-4 px-0">
-                <Link href="/sobre">Leer más <ArrowRight className="h-4 w-4" /></Link>
+                <Link href="/sobre">{tr("home.about.more")} <ArrowRight className="h-4 w-4" /></Link>
               </Button>
             </div>
             {config.aboutImageUrl && (

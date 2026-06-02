@@ -6,10 +6,13 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { getT, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { SiteConfig } from "@/lib/types";
 
 interface Props {
   config: SiteConfig;
+  locale?: Locale;
 }
 
 export const DEFAULT_NAV_LINKS = [
@@ -26,9 +29,10 @@ export const DEFAULT_NAV_LINKS = [
   { href: "/contacto", label: "Contacto", visible: true },
 ];
 
-export function Navbar({ config }: Props) {
+export function Navbar({ config, locale = DEFAULT_LOCALE }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const t = getT(locale);
 
   const LINKS = (
     config.navLinks && config.navLinks.length > 0 ? config.navLinks : DEFAULT_NAV_LINKS
@@ -86,15 +90,16 @@ export function Navbar({ config }: Props) {
               </Link>
             );
           })}
+          <LocaleSwitcher current={locale} />
           <Button asChild size="sm">
-            <Link href="/reservar">Reserva ahora</Link>
+            <Link href="/reservar">{t("hero.book")}</Link>
           </Button>
         </nav>
 
         {/* Mobile: botón reservar + hamburguesa */}
         <div className="flex items-center gap-2 lg:hidden">
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link href="/reservar">Reservar</Link>
+            <Link href="/reservar">{t("nav.book")}</Link>
           </Button>
           <button
             className="p-2 -mr-2 rounded-md hover:bg-muted transition-colors"
@@ -156,9 +161,12 @@ export function Navbar({ config }: Props) {
             })}
           </nav>
 
-          <div className="p-4 border-t">
+          <div className="p-4 border-t space-y-3">
+            <div className="flex justify-center">
+              <LocaleSwitcher current={locale} />
+            </div>
             <Button asChild size="lg" className="w-full">
-              <Link href="/reservar">Reserva ahora</Link>
+              <Link href="/reservar">{t("hero.book")}</Link>
             </Button>
           </div>
         </aside>

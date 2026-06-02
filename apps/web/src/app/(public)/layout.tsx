@@ -1,9 +1,11 @@
+import { cookies } from "next/headers";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { WhatsAppFab } from "@/components/whatsapp-fab";
 import { PromoBannerClient } from "@/components/promo-banner";
 import { PromoPopupClient } from "@/components/promo-popup";
 import { fetchSiteConfig, fetchBanner, fetchPopup } from "@/lib/server-fetch";
+import { LOCALE_COOKIE, normalizeLocale } from "@/lib/i18n";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const [config, banner, popup] = await Promise.all([
@@ -11,12 +13,13 @@ export default async function PublicLayout({ children }: { children: React.React
     fetchBanner(),
     fetchPopup(),
   ]);
+  const locale = normalizeLocale(cookies().get(LOCALE_COOKIE)?.value);
   return (
     <>
       <PromoBannerClient banner={banner} />
-      <Navbar config={config} />
+      <Navbar config={config} locale={locale} />
       <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-      <Footer config={config} />
+      <Footer config={config} locale={locale} />
       <WhatsAppFab phone={config.whatsappPhone} message={config.whatsappMsg} />
       <PromoPopupClient popup={popup} />
     </>

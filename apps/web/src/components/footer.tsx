@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { MapPin, Clock, Mail, Phone, MessageCircle, Instagram, Facebook, Twitter, Youtube } from "lucide-react";
 import { NewsletterForm } from "@/components/newsletter";
+import { getT, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { SiteConfig } from "@/lib/types";
 
 interface Props {
   config: SiteConfig;
+  locale?: Locale;
 }
 
 const DAYS_ORDER: { key: keyof NonNullable<SiteConfig["hoursByDay"]>; label: string }[] = [
@@ -26,8 +28,9 @@ function TikTokIcon({ className }: { className?: string }) {
   );
 }
 
-export function Footer({ config }: Props) {
+export function Footer({ config, locale = DEFAULT_LOCALE }: Props) {
   const year = new Date().getFullYear();
+  const t = getT(locale);
   const hasAnySocial =
     config.instagramUrl || config.facebookUrl || config.tiktokUrl || config.twitterUrl || config.youtubeUrl;
 
@@ -175,7 +178,7 @@ export function Footer({ config }: Props) {
       {/* Links legales */}
       <div className="border-t">
         <div className="container py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {year} {config.spaName}. Todos los derechos reservados.</p>
+          <p>© {year} {config.spaName}. {t("footer.rights")}</p>
           <nav className="flex flex-wrap gap-4">
             <Link href="/politicas/cancelacion" className="hover:text-primary">Política de cancelación</Link>
             <Link href="/politicas/privacidad" className="hover:text-primary">Privacidad</Link>
