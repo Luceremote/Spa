@@ -39,14 +39,16 @@ paymentsRouter.post("/checkout", async (req, res, next) => {
     }
 
     const cfg = await prisma.siteConfig.findUnique({ where: { id: "singleton" } });
-    const paymentMethods: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] = ["card"];
-    if (cfg?.enableBnpl) {
-      paymentMethods.push("klarna", "affirm", "afterpay_clearpay");
-    }
+    // Con BNPL activo dejamos que Stripe muestre todos los métodos habilitados en el
+    // dashboard (Klarna/Affirm/Afterpay + tarjeta). Es más robusto que listar métodos
+    // explícitos: no falla si la cuenta aún no activó alguno.
+    const methodConfig = cfg?.enableBnpl
+      ? { automatic_payment_methods: { enabled: true } }
+      : { payment_method_types: ["card"] as Stripe.Checkout.SessionCreateParams.PaymentMethodType[] };
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: paymentMethods,
+      ...methodConfig,
       customer_email: booking.customer.email ?? undefined,
       // Anti-fraud: hint del cliente
       payment_intent_data: {

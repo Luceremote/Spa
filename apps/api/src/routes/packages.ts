@@ -187,14 +187,13 @@ packagesRouter.post("/buy", async (req, res, next) => {
     });
 
     const siteConfig = await prisma.siteConfig.findUnique({ where: { id: "singleton" } });
-    const paymentMethods: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] = ["card"];
-    if (siteConfig?.enableBnpl) {
-      paymentMethods.push("klarna", "affirm", "afterpay_clearpay");
-    }
+    const methodConfig = siteConfig?.enableBnpl
+      ? { automatic_payment_methods: { enabled: true } }
+      : { payment_method_types: ["card"] as Stripe.Checkout.SessionCreateParams.PaymentMethodType[] };
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: paymentMethods,
+      ...methodConfig,
       customer_email: data.customerEmail,
       payment_intent_data: {
         description: `Paquete ${pkg.name} — ${pkg.service.name}`,
