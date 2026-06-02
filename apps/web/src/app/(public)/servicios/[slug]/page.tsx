@@ -1,16 +1,61 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Clock, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { JsonLd } from "@/components/json-ld";
 import { fetchServiceBySlug } from "@/lib/server-fetch";
 import { formatMoney } from "@/lib/utils";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://spa-web-eta.vercel.app";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const service = await fetchServiceBySlug(params.slug);
+  if (!service) return { title: "Servicio no encontrado" };
+  const description = service.description?.slice(0, 160) ?? undefined;
+  return {
+    title: service.name,
+    description,
+    alternates: { canonical: `${APP_URL}/servicios/${service.slug}` },
+    openGraph: {
+      title: service.name,
+      description,
+      url: `${APP_URL}/servicios/${service.slug}`,
+      images: service.imageUrl ? [{ url: service.imageUrl }] : undefined,
+    },
+  };
+}
 
 export default async function ServiceDetailPage({ params }: { params: { slug: string } }) {
   const service = await fetchServiceBySlug(params.slug);
   if (!service) notFound();
 
+  const serviceLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: service.name,
+    description: service.description,
+    ...(service.imageUrl ? { image: service.imageUrl } : {}),
+    ...(service.category?.name ? { serviceType: service.category.name } : {}),
+    url: `${APP_URL}/servicios/${service.slug}`,
+    offers: {
+      "@type": "Offer",
+      price: (service.priceCents / 100).toFixed(2),
+      priceCurrency: "USD",
+      availability: service.active
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      url: `${APP_URL}/reservar?service=${service.id}`,
+    },
+  };
+
   return (
     <div className="container py-8 sm:py-12">
+      <JsonLd data={serviceLd} />
       <Link
         href="/servicios"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4 sm:mb-6"

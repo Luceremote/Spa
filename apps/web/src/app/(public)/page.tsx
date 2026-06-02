@@ -14,20 +14,53 @@ import {
   fetchTiersPreview,
 } from "@/lib/server-fetch";
 import { Stars } from "@/components/stars";
+import { JsonLd } from "@/components/json-ld";
 import { formatMoney } from "@/lib/utils";
 import type { Service, Category, Photo, Review } from "@/lib/types";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://spa-web-eta.vercel.app";
+
+const DAY_MAP: Record<string, string> = {
+  mon: "Monday",
+  tue: "Tuesday",
+  wed: "Wednesday",
+  thu: "Thursday",
+  fri: "Friday",
+  sat: "Saturday",
+  sun: "Sunday",
+};
+
+function buildOpeningHours(hoursByDay: any): any[] | undefined {
+  if (!hoursByDay || typeof hoursByDay !== "object") return undefined;
+  const spec: any[] = [];
+  for (const [key, day] of Object.entries(DAY_MAP)) {
+    const raw = hoursByDay[key];
+    if (!raw || typeof raw !== "string") continue;
+    const m = raw.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+    if (!m) continue;
+    spec.push({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: day,
+      opens: m[1],
+      closes: m[2],
+    });
+  }
+  return spec.length ? spec : undefined;
+}
+
 export default async function HomePage() {
-  const [services, config, categories, theme, photos, reviews, packages, tiers] = await Promise.all([
-    fetchServices(),
-    fetchSiteConfig(),
-    fetchCategories(),
-    fetchTheme(),
-    fetchPhotos(),
-    fetchReviews({ featured: true, limit: 6 }),
-    fetchPackagesPreview(),
-    fetchTiersPreview(),
-  ]);
+  const [services, config, categories, theme, photos, reviews, packages, tiers, allReviews] =
+    await Promise.all([
+      fetchServices(),
+      fetchSiteConfig(),
+      fetchCategories(),
+      fetchTheme(),
+      fetchPhotos(),
+      fetchReviews({ featured: true, limit: 6 }),
+      fetchPackagesPreview(),
+      fetchTiersPreview(),
+      fetchReviews({ limit: 50 }),
+    ]);
   const topPackages = packages.slice(0, 3);
   const topTiers = tiers.slice(0, 3);
   const featured: Service[] = services.filter((s: Service) => s.featured).slice(0, 3);
@@ -36,8 +69,53 @@ export default async function HomePage() {
   const avgRating =
     reviews.length > 0 ? reviews.reduce((s: number, r: Review) => s + r.rating, 0) / reviews.length : 0;
 
+  // ── Datos estructurados (LocalBusiness) para Google ──
+  const social = [
+    config.instagramUrl,
+    config.facebookUrl,
+    config.tiktokUrl,
+    config.twitterUrl,
+    config.youtubeUrl,
+  ].filter(Boolean);
+  const businessLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "DaySpa",
+    name: config.spaName,
+    description: config.tagline,
+    url: APP_URL,
+    ...(config.heroImageUrl || config.logoUrl
+      ? { image: config.heroImageUrl ?? config.logoUrl }
+      : {}),
+    ...(config.callPhone || config.whatsappPhone
+      ? { telephone: config.callPhone ?? `+${config.whatsappPhone}` }
+      : {}),
+    ...(config.email ? { email: config.email } : {}),
+    ...(config.address
+      ? { address: { "@type": "PostalAddress", streetAddress: config.address } }
+      : {}),
+    priceRange: "$$",
+    ...(social.length ? { sameAs: social } : {}),
+    ...(buildOpeningHours(config.hoursByDay)
+      ? { openingHoursSpecification: buildOpeningHours(config.hoursByDay) }
+      : {}),
+    ...(allReviews.length > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: (
+              allReviews.reduce((s: number, r: Review) => s + r.rating, 0) / allReviews.length
+            ).toFixed(1),
+            reviewCount: allReviews.length,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+  };
+
   return (
     <>
+      <JsonLd data={businessLd} />
       <Hero config={config} template={theme.template} />
 
       {/* CÓMO FUNCIONA */}
